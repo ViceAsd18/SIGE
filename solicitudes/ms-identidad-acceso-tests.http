@@ -1,0 +1,14 @@
+### 1. Obtiene configuración desde Config Server (verifícalo en el log de arranque:
+# busca "Fetching config from server")
+
+### 2. Health check directo al servicio
+GET http://localhost:8081/actuator/health
+
+### 3. Health check DEBE mostrar el indicador de MySQL como UP
+# (viene incluido en la respuesta anterior si show-details: always está activo)
+
+### 4. Registrado en Eureka -> revisar manualmente en http://localhost:8761
+# Debe aparecer MS-IDENTIDAD-ACCESO en la lista
+
+### 5. Accesible A TRAVÉS del Gateway (no directo)
+GET http://localhost:8080/api/identidad/actuator/health

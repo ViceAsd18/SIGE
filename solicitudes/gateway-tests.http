@@ -1,0 +1,18 @@
+### 1. Health check del Gateway
+GET http://localhost:8080/actuator/health
+
+### 2. Rutas configuradas (debería mostrar ms-identidad-acceso)
+GET http://localhost:8080/actuator/gateway/routes
+
+### 3. Ruta protegida SIN token -> debe dar 401 Unauthorized
+GET http://localhost:8080/api/algo-inventado
+
+### 4. Ruta pública de auth SIN token -> NO debe dar 401
+# Esperado: 503 Service Unavailable (el Gateway conoce la ruta,
+# pero ms-identidad-acceso todavía no existe)
+GET http://localhost:8080/api/identidad/auth/login
+
+### 5. (Referencia futura) Ruta protegida CON token,
+# para cuando exista ms-identidad-acceso y tengamos un JWT real
+//GET http://localhost:8080/api/identidad/personas/1
+//Authorization: Bearer {{jwtToken}}

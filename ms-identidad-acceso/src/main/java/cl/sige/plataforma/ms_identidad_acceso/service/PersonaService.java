@@ -2,6 +2,7 @@ package cl.sige.plataforma.ms_identidad_acceso.service;
 
 import cl.sige.plataforma.ms_identidad_acceso.domain.Persona;
 import cl.sige.plataforma.ms_identidad_acceso.exception.RecursoDuplicadoException;
+import cl.sige.plataforma.ms_identidad_acceso.exception.RecursoNoEncontradoException;
 import cl.sige.plataforma.ms_identidad_acceso.repository.PersonaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,4 +48,13 @@ public class PersonaService {
         log.info("Persona creada: id={}, usuario={}", guardada.getId(), guardada.getUsuario());
         return guardada;
     }
+
+
+ 
+    @Transactional(readOnly = true)
+    public Persona obtenerPorId(Long id) {
+        return personaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Persona", id));
+    }
+
 }

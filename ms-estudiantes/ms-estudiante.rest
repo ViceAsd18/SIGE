@@ -1,0 +1,56 @@
+### 1. Crear una Persona en ms-identidad-acceso con rol ESTUDIANTE, para tener un personaRolId real
+POST http://localhost:8081/personas
+Content-Type: application/json
+
+{
+  "rutDocumentoIdentidad": "66666666-6",
+  "nombres": "Pedro",
+  "apellidos": "Soto",
+  "fechaNacimiento": "2010-08-15",
+  "email": "pedro.soto4@sige.cl",
+  "telefono": "+56933333333",
+  "usuario": "psoto4",
+  "password": "claveEstudiante789"
+}
+
+### 2. Asignar rol ESTUDIANTE (usa el id devuelto en la request 1)
+POST http://localhost:8081/personas/7/roles
+Content-Type: application/json
+
+{
+  "nombreRol": "ESTUDIANTE"
+}
+
+### 3. Crear el Estudiante en ms-estudiantes, usando el personaRolId de la request 2
+# Esto SI dispara la llamada Feign real hacia ms-identidad-acceso
+POST http://localhost:8082/estudiantes
+Content-Type: application/json
+
+{
+  "personaRolId": 24
+}
+
+### 4. Caso de error: personaRolId inexistente -> debe dar 422
+POST http://localhost:8082/estudiantes
+Content-Type: application/json
+
+{
+  "personaRolId": 9999
+}
+
+### 5. Caso de error: personaRolId valido pero de rol DOCENTE, no ESTUDIANTE -> debe dar 422
+# (usa el personaRolId del docente que creamos en sesiones anteriores)
+POST http://localhost:8082/estudiantes
+Content-Type: application/json
+
+{
+  "personaRolId": 24
+}
+
+### 6. Duplicado: repetir la request 3 -> debe dar 409
+POST http://localhost:8082/estudiantes
+Content-Type: application/json
+
+{
+  "personaRolId": 23
+}

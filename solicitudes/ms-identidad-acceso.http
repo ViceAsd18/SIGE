@@ -1,0 +1,78 @@
+### 1. Login exitoso (usa los datos que ya quedaron en la BD de la sesion anterior)
+POST http://localhost:8081/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "jperez",
+  "password": "claveSegura123"
+}
+
+### 2. Password incorrecta -> debe dar 401 con mensaje generico
+POST http://localhost:8081/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "jperez",
+  "password": "incorrecta"
+}
+
+### 3. Usuario inexistente -> debe dar 401 con el MISMO mensaje que el caso anterior
+POST http://localhost:8081/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "noexiste",
+  "password": "cualquiera"
+}
+
+### 4. A traves del Gateway (ruta publica /api/identidad/auth/**)
+# @name loginGateway
+POST http://localhost:8080/api/identidad/auth/login
+Content-Type: application/json
+
+{
+  "usuario": "jperez",
+  "password": "claveSegura123"
+}
+
+### 5. Bonus: usar el token real en una ruta protegida del Gateway
+# (el endpoint /personas/1 todavia no existe -> se espera 404, NO 401 -
+#  eso confirma que el Gateway valido el JWT correctamente con el secreto real)
+GET http://localhost:8080/api/identidad/personas/1
+Authorization: Bearer {{loginGateway.response.body.token}}
+
+
+### 1. Crear una segunda persona (Directivo, para poder aprobar excepciones mas adelante)
+POST http://localhost:8081/personas
+Content-Type: application/json
+
+{
+  "rutDocumentoIdentidad": "22222222-2",
+  "nombres": "María",
+  "apellidos": "González",
+  "fechaNacimiento": "1975-03-20",
+  "email": "maria.gonzalez@sige.cl",
+  "telefono": "+56922222222",
+  "usuario": "mgonzalez",
+  "password": "otraClaveSegura456"
+}
+
+### 2. Obtener la persona creada
+GET http://localhost:8081/personas/3
+
+### 3. Asignar rol DIRECTIVO
+POST http://localhost:8081/personas/2/roles
+Content-Type: application/json
+
+{
+  "nombreRol": "DIRECTIVO"
+}
+
+### 4. Ver roles activos
+GET http://localhost:8081/personas/3/roles
+
+### 5. Desactivar el rol (usa el personaRolId que devolvio la request 3)
+PATCH http://localhost:8081/personas/roles/2/desactivar
+
+### 6. Confirmar que ya no aparece como activo
+GET http://localhost:8081/personas/3/roles

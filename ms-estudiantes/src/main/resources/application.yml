@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: ms-estudiantes
+  config:
+    import: "configserver:http://localhost:8888"

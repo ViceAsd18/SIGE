@@ -58,4 +58,11 @@ public class PersonaRolService {
         return personaRolRepository.findByPersonaIdAndEstado(personaId, EstadoRol.ACTIVO);
     }
 
+    @Transactional(readOnly = true)
+    public PersonaRol obtenerPorId(Long id) {
+        return personaRolRepository.findByIdConPersonaYRol(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("PersonaRol", id));
+    }
+
+
 }

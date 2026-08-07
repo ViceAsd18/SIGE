@@ -1,5 +1,7 @@
 package cl.sige.plataforma.ms_estudiantes.web.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,9 +12,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import cl.sige.plataforma.ms_estudiantes.domain.Estudiante;
+import cl.sige.plataforma.ms_estudiantes.service.ApoderadoEstudianteService;
 import cl.sige.plataforma.ms_estudiantes.service.EstudianteService;
 import cl.sige.plataforma.ms_estudiantes.web.dto.estudiante.CrearEstudianteRequest;
 import cl.sige.plataforma.ms_estudiantes.web.dto.estudiante.EstudianteResponse;
+import cl.sige.plataforma.ms_estudiantes.web.dto.relacion.ApoderadoRelacionResponse;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -21,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class EstudianteController {
 
     private final EstudianteService estudianteService;
+    private final ApoderadoEstudianteService apoderadoEstudianteService;
 
     @PostMapping
     public ResponseEntity<EstudianteResponse> crear(@RequestBody CrearEstudianteRequest request) {
@@ -34,4 +39,15 @@ public class EstudianteController {
         Estudiante estudiante = estudianteService.obtenerPorId(id);
         return ResponseEntity.ok(new EstudianteResponse(estudiante.getId(), estudiante.getPersonaRolId()));
     }
+
+    @GetMapping("/{estudianteId}/apoderados")
+    public ResponseEntity<List<ApoderadoRelacionResponse>> obtenerApoderados(@PathVariable Long estudianteId) {
+        List<ApoderadoRelacionResponse> response = apoderadoEstudianteService
+                .obtenerApoderadosDeEstudiante(estudianteId).stream()
+                .map(ae -> new ApoderadoRelacionResponse(ae.getApoderado().getId(), ae.getTipoRelacion()))
+                .toList();
+        return ResponseEntity.ok(response);
+    }
+
+
 }

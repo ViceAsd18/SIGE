@@ -54,3 +54,35 @@ Content-Type: application/json
 {
   "personaRolId": 23
 }
+
+
+
+### 1. Crear un Apoderado (usa un personaRolId con rol APODERADO real de ms-identidad-acceso)
+POST http://localhost:8082/apoderados
+Content-Type: application/json
+
+{ "personaRolId": 25 }
+
+### 2. Asociar el estudiante (id=1, del test anterior) como PRINCIPAL
+POST http://localhost:8082/apoderados/1/estudiantes/1
+Content-Type: application/json
+
+{ "tipoRelacion": "PRINCIPAL" }
+
+### 3. Duplicado -> debe dar 409
+POST http://localhost:8082/apoderados/1/estudiantes/1
+Content-Type: application/json
+
+{ "tipoRelacion": "PRINCIPAL" }
+
+### 4. Apoderado inexistente -> debe dar 404
+POST http://localhost:8082/apoderados/999/estudiantes/1
+Content-Type: application/json
+
+{ "tipoRelacion": "SECUNDARIO" }
+
+### 5. Listar estudiantes del apoderado
+GET http://localhost:8082/apoderados/1/estudiantes
+
+### 6. Listar apoderados del estudiante (consulta inversa)
+GET http://localhost:8082/estudiantes/1/apoderados

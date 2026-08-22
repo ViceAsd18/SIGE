@@ -58,14 +58,14 @@ Content-Type: application/json
 }
 
 ### 2. Obtener la persona creada
-GET http://localhost:8081/personas/3
+GET http://localhost:8081/personas/7
 
 ### 3. Asignar rol DIRECTIVO
-POST http://localhost:8081/personas/2/roles
+POST http://localhost:8081/personas/7/roles
 Content-Type: application/json
 
 {
-  "nombreRol": "DIRECTIVO"
+  "nombreRol": "APODERADO"
 }
 
 ### 4. Ver roles activos

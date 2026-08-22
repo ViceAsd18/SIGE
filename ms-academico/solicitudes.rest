@@ -1,0 +1,258 @@
+### =========================================
+### ms-academico — Verificación completa
+### Puerto: 8083
+### =========================================
+
+### 1. Crear NivelEducativo
+POST http://localhost:8083/niveles-educativos
+Content-Type: application/json
+
+{
+  "nombre": "Educacion  Basica"
+}
+
+### 2. Duplicado -> debe dar 409
+POST http://localhost:8083/niveles-educativos
+Content-Type: application/json
+
+{
+  "nombre": "Educacion Media"
+}
+
+### 3. Obtener el nivel creado
+GET http://localhost:8083/niveles-educativos/1
+
+### 4. Nivel inexistente -> debe dar 404
+GET http://localhost:8083/niveles-educativos/999
+
+### =========================================
+
+### 5. Crear PeriodoAcademico
+POST http://localhost:8083/periodos-academicos
+Content-Type: application/json
+
+{
+  "nombreAnio": "2027",
+  "fechaInicio": "2027-03-01",
+  "fechaTermino": "2027-12-15"
+}
+
+### 6. Duplicado -> debe dar 409
+POST http://localhost:8083/periodos-academicos
+Content-Type: application/json
+
+{
+  "nombreAnio": "2026",
+  "fechaInicio": "2026-03-01",
+  "fechaTermino": "2026-12-15"
+}
+
+### 7. Obtener el periodo (deberia venir con estado ABIERTO)
+GET http://localhost:8083/periodos-academicos/2
+
+### =========================================
+
+### 8. Crear Subperiodo (Primer semestre)
+POST http://localhost:8083/periodos-academicos/2/subperiodos
+Content-Type: application/json
+
+{
+  "nombre": "Primer semestre",
+  "fechaInicio": "2026-03-01",
+  "fechaTermino": "2026-07-15"
+}
+
+### 9. Crear otro Subperiodo (Segundo semestre) - mismo nombre en OTRO periodo deberia ser valido,
+### pero primero probemos que el mismo nombre en el mismo periodo estaria protegido por la UNIQUE compuesta
+### (esto no lo valida el service todavia, solo la migracion - es un pendiente que puedes anotar)
+POST http://localhost:8083/periodos-academicos/2/subperiodos
+Content-Type: application/json
+
+{
+  "nombre": "Segundo semestre",
+  "fechaInicio": "2026-07-16",
+  "fechaTermino": "2026-12-15"
+}
+
+### 10. Listar subperiodos del periodo 1 (deberia mostrar los 2)
+GET http://localhost:8083/periodos-academicos/2/subperiodos
+
+### 11. Periodo inexistente -> debe dar 404
+POST http://localhost:8083/periodos-academicos/999/subperiodos
+Content-Type: application/json
+
+{
+  "nombre": "Primer semestre",
+  "fechaInicio": "2026-03-01",
+  "fechaTermino": "2026-07-15"
+}
+
+### =========================================
+
+### 12. Crear Asignatura
+POST http://localhost:8083/asignaturas
+Content-Type: application/json
+
+{
+  "nombre": "Lenguaje y Comunicacion"
+}
+
+### =========================================
+### CURSO — primera llamada Feign real (hacia ms-identidad-acceso)
+### Usa el personaRolId=1 (Juan Perez, rol DOCENTE, creado en sesiones anteriores)
+### =========================================
+
+### 13. Crear Curso con profesor jefe VALIDO
+POST http://localhost:8083/cursos
+Content-Type: application/json
+
+{
+  "nivelEducativoId": 1,
+  "periodoAcademicoId": 2,
+  "paralelo": "B",
+  "profesorJefePersonaRolId": 1
+}
+
+### 14. Duplicado (mismo nivel+periodo+paralelo) -> debe dar 409
+POST http://localhost:8083/cursos
+Content-Type: application/json
+
+{
+  "nivelEducativoId": 1,
+  "periodoAcademicoId": 1,
+  "paralelo": "A",
+  "profesorJefePersonaRolId": 1
+}
+
+### 15. profesorJefePersonaRolId INEXISTENTE -> debe dar 422
+POST http://localhost:8083/cursos
+Content-Type: application/json
+
+{
+  "nivelEducativoId": 1,
+  "periodoAcademicoId": 1,
+  "paralelo": "B",
+  "profesorJefePersonaRolId": 9999
+}
+
+### 16. profesorJefePersonaRolId VALIDO pero de rol APODERADO, no DOCENTE -> debe dar 422
+### (usa el personaRolId=4, Maria Gonzalez con rol DIRECTIVO desactivado en sesiones anteriores -
+###  si ese id ya no sirve, usa cualquier personaRolId real que NO sea DOCENTE)
+POST http://localhost:8083/cursos
+Content-Type: application/json
+
+{
+  "nivelEducativoId": 1,
+  "periodoAcademicoId": 1,
+  "paralelo": "B",
+  "profesorJefePersonaRolId": 4
+}
+
+### 17. Obtener el curso creado
+GET http://localhost:8083/cursos/3
+
+### =========================================
+
+### 18. Crear AsignacionDocente (docente=1, asignatura=1, curso=1)
+POST http://localhost:8083/asignaciones-docente
+Content-Type: application/json
+
+{
+  "docentePersonaRolId": 7,
+  "asignaturaId": 1,
+  "cursoId": 1,
+  "fechaInicioVigencia": "2026-03-01"
+}
+
+### 19. Finalizar la vigencia de esa asignacion
+PATCH http://localhost:8083/asignaciones-docente/1/finalizar
+Content-Type: application/json
+
+{
+  "fechaTermino": "2026-06-30"
+}
+
+### =========================================
+### MATRICULA — segunda llamada Feign real (hacia ms-estudiantes)
+### Usa el estudianteId=1 (Pedro Soto, creado en la sesion de ms-estudiantes)
+### =========================================
+
+### 20. Crear Matricula VALIDA
+POST http://localhost:8083/matriculas
+Content-Type: application/json
+
+{
+  "estudianteId": 1,
+  "cursoId": 1,
+  "fechaInicioVigencia": "2026-03-01"
+}
+
+### 21. Mismo estudiante, ya tiene matricula ACTIVA -> debe dar 409
+POST http://localhost:8083/matriculas
+Content-Type: application/json
+
+{
+  "estudianteId": 1,
+  "cursoId": 1,
+  "fechaInicioVigencia": "2026-03-01"
+}
+
+### 22. estudianteId INEXISTENTE -> debe dar 422
+POST http://localhost:8083/matriculas
+Content-Type: application/json
+
+{
+  "estudianteId": 9999,
+  "cursoId": 1,
+  "fechaInicioVigencia": "2026-03-01"
+}
+
+### =========================================
+### Cambio de curso — crea un segundo curso primero
+### =========================================
+
+### 23. Crear un segundo Curso (paralelo B) para poder cambiar al estudiante ahi
+POST http://localhost:8083/cursos
+Content-Type: application/json
+
+{
+  "nivelEducativoId": 1,
+  "periodoAcademicoId": 1,
+  "paralelo": "C",
+  "profesorJefePersonaRolId": 1
+}
+
+### 24. Cambiar de curso la matricula 1 (A -> B)
+### Deberia: finalizar matricula 1, crear una matricula NUEVA activa en el curso 2
+PATCH http://localhost:8083/matriculas/3/cambiar-curso
+Content-Type: application/json
+
+{
+  "nuevoCursoId": 1,
+  "motivo": "Cambio solicitado por apoderado"
+}
+
+### 25. Confirmar que la matricula original quedo FINALIZADA
+GET http://localhost:8083/matriculas/3
+
+### (No hay GET por id expu|esto en el controller para la matricula nueva por separado
+###  del response de la request 24 - revisa ahi el id devuelto)
+
+### =========================================
+
+### 26. Retirar una matricula (usa el id de la matricula ACTIVA actual, la que devolvio la request 24)
+PATCH http://localhost:8083/matriculas/1/retirar
+Content-Type: application/json
+
+{
+  "motivo": "Retiro voluntario del establecimiento"
+}
+
+### =========================================
+### Verificacion de infraestructura
+### =========================================
+
+### 27. Health check
+GET http://localhost:8083/actuator/health
+
+### 28. Registrado en Eureka -> revisar manualmente http://localhost:8761

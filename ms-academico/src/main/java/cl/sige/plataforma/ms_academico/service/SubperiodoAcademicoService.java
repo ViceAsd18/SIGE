@@ -52,6 +52,11 @@ public class SubperiodoAcademicoService {
         subperiodo.reabrir();
     }
 
+    @Transactional(readOnly = true)
+    public SubperiodoAcademico obtenerPorId(Long id) {
+        return subperiodoAcademicoRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("SubperiodoAcademico", id));
+    }
 
 
 }

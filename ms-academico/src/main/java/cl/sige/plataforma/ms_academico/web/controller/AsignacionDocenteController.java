@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,5 +45,11 @@ public class AsignacionDocenteController {
                 a.getId(), a.getDocentePersonaRolId(), a.getAsignatura().getId(), a.getCurso().getId(),
                 a.getFechaInicioVigencia(), a.getFechaTerminoVigencia(), a.getEstado());
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<AsignacionDocenteResponse> obtener(@PathVariable Long id) {
+        return ResponseEntity.ok(aResponse(asignacionDocenteService.obtenerPorId(id)));
+    }
+
 
 }

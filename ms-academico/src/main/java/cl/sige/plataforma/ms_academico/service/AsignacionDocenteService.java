@@ -61,6 +61,12 @@ public class AsignacionDocenteService {
         log.info("AsignacionDocente finalizada: id={}", id);
     }
 
+    @Transactional(readOnly = true)
+    public AsignacionDocente obtenerPorId(Long id) {
+        return asignacionDocenteRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("AsignacionDocente", id));
+    }
+
 
 
 }

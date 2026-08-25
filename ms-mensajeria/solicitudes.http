@@ -1,0 +1,117 @@
+### =========================================
+### ms-mensajeria — Verificacion completa
+### Puerto: 8086
+### =========================================
+
+### 1. Iniciar conversacion Docente-Apoderado
+### Ajusta los IDs segun tus datos reales:
+### - docentePersonaId=1, docentePersonaRolId=1 (Juan Perez, DOCENTE)
+### - apoderadoPersonaId=? (revisa el personaId real del Apoderado en ms-identidad-acceso)
+### - apoderadoPersonaRolId=? (el personaRolId de ese Apoderado)
+### - estudianteId=1 (Pedro Soto)
+
+
+POST http://localhost:8086/conversaciones/docente-apoderado
+Content-Type: application/json
+
+{
+  "docentePersonaId": 1,
+  "docentePersonaRolId": 1,
+  "apoderadoPersonaId": 3,
+  "apoderadoPersonaRolId": 25,
+  "estudianteId": 1
+}
+
+### 2. Docente sin asignacion vigente -> debe dar 403
+### (usa un personaRolId de un Docente que no tenga AsignacionDocente vigente,
+###  o crea uno nuevo sin asignar para probarlo)
+POST http://localhost:8086/conversaciones/docente-apoderado
+Content-Type: application/json
+
+{
+  "docentePersonaId": 1,
+  "docentePersonaRolId": 1,
+  "apoderadoPersonaId": 3,
+  "apoderadoPersonaRolId": 25,
+  "estudianteId": 1
+}
+
+### 3. Obtener la conversacion creada
+GET http://localhost:8086/conversaciones/1
+
+### 4. Enviar un mensaje (autor = docente, participante valido)
+POST http://localhost:8086/conversaciones/1/mensajes
+Content-Type: application/json
+
+{
+  "autorPersonaId": 1,
+  "contenido": "Buenas tardes, quería comentarle sobre el rendimiento de Pedro"
+}
+
+### 5. Enviar mensaje de alguien que NO es participante -> debe dar 403
+POST http://localhost:8086/conversaciones/1/mensajes
+Content-Type: application/json
+
+{
+  "autorPersonaId": 999,
+  "contenido": "No deberia poder enviar esto"
+}
+
+### 6. Listar mensajes de la conversacion
+GET http://localhost:8086/conversaciones/1/mensajes
+
+### 7. Editar el mensaje (mismo autor)
+PATCH http://localhost:8086/conversaciones/1/mensajes/1
+Content-Type: application/json
+
+{
+  "autorPersonaId": 1,
+  "nuevoContenido": "Buenas tardes, quería comentarle sobre el rendimiento de Pedro (editado)"
+}
+
+### 8. Editar el mensaje con OTRO autor -> debe dar 403
+PATCH http://localhost:8086/conversaciones/1/mensajes/1
+Content-Type: application/json
+
+{
+  "autorPersonaId": 999,
+  "nuevoContenido": "Esto no deberia funcionar"
+}
+
+### =========================================
+### Solicitud de acceso excepcional
+### =========================================
+
+### 9. Crear solicitud de acceso (Inspector solicitando)
+### Usa un personaRolId real con rol INSPECTOR
+POST http://localhost:8086/solicitudes-acceso-conversacion
+Content-Type: application/json
+
+{
+  "conversacionId": 1,
+  "solicitantePersonaRolId": 5,
+  "motivo": "Investigacion de convivencia escolar"
+}
+
+### 10. Intentar leer mensajes ANTES de aprobar -> debe dar 403
+GET http://localhost:8086/solicitudes-acceso-conversacion/1/mensajes
+
+### 11. Aprobar la solicitud (Directivo aprobando)
+PATCH http://localhost:8086/solicitudes-acceso-conversacion/1/aprobar
+Content-Type: application/json
+
+{
+  "aprobadorPersonaRolId": 2
+}
+
+### 12. Ahora SI leer los mensajes -> debe dar 200
+GET http://localhost:8086/solicitudes-acceso-conversacion/1/mensajes
+
+### =========================================
+### Infraestructura
+### =========================================
+
+### 13. Health check
+GET http://localhost:8086/actuator/health
+
+### 14. Registrado en Eureka

@@ -1,0 +1,105 @@
+### =========================================
+### ms-anotaciones — Verificación completa
+### Puerto: 8085
+### =========================================
+
+### 1. Crear Anotacion POSITIVA (sin gravedad) - usa estudianteId=1 y autorPersonaRolId=1 (Docente)
+POST http://localhost:8085/anotaciones
+Content-Type: application/json
+
+{
+  "estudianteId": 1,
+  "autorPersonaRolId": 1,
+  "categoria": "POSITIVA",
+  "gravedad": null,
+  "descripcion": "Destacada participacion en clase de Matematica"
+}
+
+### 2. Crear Anotacion NEGATIVA sin gravedad -> debe dar 422
+POST http://localhost:8085/anotaciones
+Content-Type: application/json
+
+{
+  "estudianteId": 1,
+  "autorPersonaRolId": 1,
+  "categoria": "NEGATIVA",
+  "gravedad": null,
+  "descripcion": "Incumplimiento de tarea"
+}
+
+### 3. Crear Anotacion NEGATIVA CON gravedad -> debe dar 201
+POST http://localhost:8085/anotaciones
+Content-Type: application/json
+
+{
+  "estudianteId": 1,
+  "autorPersonaRolId": 1,
+  "categoria": "NEGATIVA",
+  "gravedad": "LEVE",
+  "descripcion": "No entrego trabajo en la fecha indicada"
+}
+
+### 4. Crear Anotacion POSITIVA CON gravedad -> debe dar 422 (regla inversa)
+POST http://localhost:8085/anotaciones
+Content-Type: application/json
+
+{
+  "estudianteId": 1,
+  "autorPersonaRolId": 1,
+  "categoria": "POSITIVA",
+  "gravedad": "GRAVE",
+  "descripcion": "Esto no deberia ser valido"
+}
+
+### 5. estudianteId inexistente -> debe dar 422
+POST http://localhost:8085/anotaciones
+Content-Type: application/json
+
+{
+  "estudianteId": 9999,
+  "autorPersonaRolId": 1,
+  "categoria": "ACADEMICA",
+  "gravedad": null,
+  "descripcion": "Test"
+}
+
+### 6. autorPersonaRolId con rol NO autorizado (ej. un Apoderado, personaRolId=3 o el que corresponda) -> debe dar 422
+POST http://localhost:8085/anotaciones
+Content-Type: application/json
+
+{
+  "estudianteId": 1,
+  "autorPersonaRolId": 3,
+  "categoria": "ACADEMICA",
+  "gravedad": null,
+  "descripcion": "Un apoderado no deberia poder crear esto"
+}
+
+### 7. Obtener la anotacion 1
+GET http://localhost:8085/anotaciones/1
+
+### 8. Modificar la descripcion
+PATCH http://localhost:8085/anotaciones/1
+Content-Type: application/json
+
+{
+  "descripcion": "Destacada participacion en clase de Matematica - actualizado"
+}
+
+### 9. Anular la anotacion
+PATCH http://localhost:8085/anotaciones/1/anular
+
+### 10. Confirmar que quedo ANULADA
+GET http://localhost:8085/anotaciones/1
+
+### 11. Listar todas las anotaciones del estudiante 1
+GET http://localhost:8085/anotaciones/estudiante/1
+
+### =========================================
+### Infraestructura
+### =========================================
+
+### 12. Health check
+GET http://localhost:8085/actuator/health
+
+### 13. Registrado en Eureka -> revisar manualmente http://localhost:8761

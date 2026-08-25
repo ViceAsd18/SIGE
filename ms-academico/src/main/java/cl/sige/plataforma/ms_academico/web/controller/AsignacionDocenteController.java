@@ -1,6 +1,7 @@
 package cl.sige.plataforma.ms_academico.web.controller;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import cl.sige.plataforma.ms_academico.domain.AsignacionDocente;
@@ -51,5 +53,13 @@ public class AsignacionDocenteController {
         return ResponseEntity.ok(aResponse(asignacionDocenteService.obtenerPorId(id)));
     }
 
+    @GetMapping
+    public ResponseEntity<List<AsignacionDocenteResponse>> buscarPorDocente(@RequestParam Long docentePersonaRolId) {
+        List<AsignacionDocenteResponse> response = asignacionDocenteService.buscarPorDocente(docentePersonaRolId)
+                .stream()
+                .map(this::aResponse)
+                .toList();
+        return ResponseEntity.ok(response);
+    }
 
 }

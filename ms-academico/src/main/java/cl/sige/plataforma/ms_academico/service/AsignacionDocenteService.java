@@ -1,6 +1,7 @@
 package cl.sige.plataforma.ms_academico.service;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,6 +68,9 @@ public class AsignacionDocenteService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("AsignacionDocente", id));
     }
 
-
+    @Transactional(readOnly = true)
+    public List<AsignacionDocente> buscarPorDocente(Long docentePersonaRolId) {
+        return asignacionDocenteRepository.findByDocentePersonaRolId(docentePersonaRolId);
+    }
 
 }

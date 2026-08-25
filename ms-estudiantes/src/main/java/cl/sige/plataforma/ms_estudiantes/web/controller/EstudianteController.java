@@ -44,7 +44,10 @@ public class EstudianteController {
     public ResponseEntity<List<ApoderadoRelacionResponse>> obtenerApoderados(@PathVariable Long estudianteId) {
         List<ApoderadoRelacionResponse> response = apoderadoEstudianteService
                 .obtenerApoderadosDeEstudiante(estudianteId).stream()
-                .map(ae -> new ApoderadoRelacionResponse(ae.getApoderado().getId(), ae.getTipoRelacion()))
+                .map(ae -> new ApoderadoRelacionResponse(
+                        ae.getApoderado().getId(), 
+                        ae.getApoderado().getPersonaRolId(), 
+                        ae.getTipoRelacion()))
                 .toList();
         return ResponseEntity.ok(response);
     }

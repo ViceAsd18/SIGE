@@ -4,5 +4,6 @@ import cl.sige.plataforma.ms_estudiantes.domain.TipoRelacionApoderado;
 
 public record ApoderadoRelacionResponse(
     Long apoderadoId, 
+    Long personaRolId,
     TipoRelacionApoderado tipoRelacion
 ) {}

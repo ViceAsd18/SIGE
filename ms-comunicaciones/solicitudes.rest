@@ -1,0 +1,145 @@
+### =========================================
+### ms-comunicaciones — Verificacion completa
+### Puerto: 8087
+### =========================================
+
+### 1. Comunicado de alcance CURSO (emisor Docente, personaRolId=1)
+POST http://localhost:8087/comunicados
+Content-Type: application/json
+
+{
+  "emisorPersonaRolId": 1,
+  "tipoAlcance": "CURSO",
+  "cursoId": 1,
+  "nivelEducativoId": null,
+  "asunto": "Reunion de apoderados proxima semana",
+  "contenido": "Se les recuerda que la reunion de apoderados sera el proximo martes a las 18:00 hrs."
+}
+
+### 2. CURSO sin cursoId -> debe dar 422
+POST http://localhost:8087/comunicados
+Content-Type: application/json
+
+{
+  "emisorPersonaRolId": 1,
+  "tipoAlcance": "CURSO",
+  "cursoId": null,
+  "nivelEducativoId": null,
+  "asunto": "Test invalido",
+  "contenido": "Esto no deberia funcionar"
+}
+
+### 3. CURSO con AMBOS campos llenos -> debe dar 422 (regla cruzada)
+POST http://localhost:8087/comunicados
+Content-Type: application/json
+
+{
+  "emisorPersonaRolId": 1,
+  "tipoAlcance": "CURSO",
+  "cursoId": 1,
+  "nivelEducativoId": 1,
+  "asunto": "Test invalido",
+  "contenido": "No deberian coexistir ambos campos"
+}
+
+### 4. cursoId inexistente -> debe dar 422
+POST http://localhost:8087/comunicados
+Content-Type: application/json
+
+{
+  "emisorPersonaRolId": 1,
+  "tipoAlcance": "CURSO",
+  "cursoId": 9999,
+  "nivelEducativoId": null,
+  "asunto": "Test",
+  "contenido": "Curso inexistente"
+}
+
+### 5. Comunicado de alcance NIVEL
+POST http://localhost:8087/comunicados
+Content-Type: application/json
+
+{
+  "emisorPersonaRolId": 1,
+  "tipoAlcance": "NIVEL",
+  "cursoId": null,
+  "nivelEducativoId": 1,
+  "asunto": "Actividad de Educacion Media",
+  "contenido": "Actividad extraprogramatica para todos los cursos de Educacion Media"
+}
+
+### 6. Comunicado de alcance ESTABLECIMIENTO
+POST http://localhost:8087/comunicados
+Content-Type: application/json
+
+{
+  "emisorPersonaRolId": 1,
+  "tipoAlcance": "ESTABLECIMIENTO",
+  "cursoId": null,
+  "nivelEducativoId": null,
+  "asunto": "Aniversario del colegio",
+  "contenido": "Celebracion de aniversario el proximo viernes, actividades para todo el establecimiento"
+}
+
+### 7. ESTABLECIMIENTO con cursoId lleno -> debe dar 422
+POST http://localhost:8087/comunicados
+Content-Type: application/json
+
+{
+  "emisorPersonaRolId": 1,
+  "tipoAlcance": "ESTABLECIMIENTO",
+  "cursoId": 1,
+  "nivelEducativoId": null,
+  "asunto": "Test invalido",
+  "contenido": "No deberia tener cursoId"
+}
+
+### 8. Emisor con rol no autorizado (usa un personaRolId de Apoderado/Estudiante) -> debe dar 422
+POST http://localhost:8087/comunicados
+Content-Type: application/json
+
+{
+  "emisorPersonaRolId": 25,
+  "tipoAlcance": "ESTABLECIMIENTO",
+  "cursoId": null,
+  "nivelEducativoId": null,
+  "asunto": "Test",
+  "contenido": "Un apoderado no deberia poder emitir esto"
+}
+
+### 9. Obtener el comunicado 1
+GET http://localhost:8087/comunicados/1
+
+### =========================================
+### Notificaciones
+### =========================================
+
+### 10. Crear notificacion manual (simulando lo que Kafka haria automaticamente despues)
+POST http://localhost:8087/notificaciones
+Content-Type: application/json
+
+{
+  "destinatarioPersonaId": 2,
+  "tipoEvento": "COMUNICADO_PUBLICADO",
+  "entidadOrigenTipo": "Comunicado",
+  "entidadOrigenId": 1,
+  "contenido": "Se publico un nuevo comunicado: Reunion de apoderados proxima semana"
+}
+
+### 11. Listar notificaciones del destinatario
+GET http://localhost:8087/notificaciones/destinatario/2
+
+### 12. Marcar como leida
+PATCH http://localhost:8087/notificaciones/1/marcar-leida
+
+### 13. Confirmar que quedo LEIDA
+GET http://localhost:8087/notificaciones/destinatario/2
+
+### =========================================
+### Infraestructura
+### =========================================
+
+### 14. Health check
+GET http://localhost:8087/actuator/health
+
+### 15. Registrado en Eureka

@@ -5,7 +5,6 @@ import cl.sige.plataforma.ms_identidad_acceso.domain.PersonaRol;
 import cl.sige.plataforma.ms_identidad_acceso.service.NuevaPersonaComando;
 import cl.sige.plataforma.ms_identidad_acceso.service.PersonaRolService;
 import cl.sige.plataforma.ms_identidad_acceso.service.PersonaService;
-import cl.sige.plataforma.ms_identidad_acceso.web.dto.*;
 import cl.sige.plataforma.ms_identidad_acceso.web.dto.persona.CrearPersonaRequest;
 import cl.sige.plataforma.ms_identidad_acceso.web.dto.persona.PersonaResponse;
 import cl.sige.plataforma.ms_identidad_acceso.web.dto.rol.AsignarRolRequest;

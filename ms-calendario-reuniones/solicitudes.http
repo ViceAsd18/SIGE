@@ -1,0 +1,282 @@
+### =========================================
+### PASO 0 — Recrear datos base (la BD se reseteo)
+### =========================================
+
+### 1. Crear Persona con rol DOCENTE (sera Profesor Jefe)
+POST http://localhost:8081/personas
+Content-Type: application/json
+
+{
+  "rutDocumentoIdentidad": "11111111-1",
+  "nombres": "Juan",
+  "apellidos": "Perez",
+  "fechaNacimiento": "1980-05-10",
+  "email": "juan.perez@sige.cl",
+  "telefono": "+56911111111",
+  "usuario": "jperez",
+  "password": "claveSegura123"
+}
+
+### 2. Asignar rol DOCENTE (usa el id devuelto en request 1, ej. 1)
+POST http://localhost:8081/personas/1/roles
+Content-Type: application/json
+
+{ "nombreRol": "DOCENTE" }
+
+### 3. Crear Persona con rol INSPECTOR
+POST http://localhost:8081/personas
+Content-Type: application/json
+
+{
+  "rutDocumentoIdentidad": "22222222-2",
+  "nombres": "Maria",
+  "apellidos": "Gonzalez",
+  "fechaNacimiento": "1975-03-20",
+  "email": "maria.gonzalez@sige.cl",
+  "telefono": "+56922222222",
+  "usuario": "mgonzalez",
+  "password": "claveSegura456"
+}
+
+### 4. Asignar rol INSPECTOR (usa el id devuelto en request 3, ej. 2)
+POST http://localhost:8081/personas/2/roles
+Content-Type: application/json
+
+{ "nombreRol": "INSPECTOR" }
+
+### 5. Crear Persona con rol DIRECTIVO
+POST http://localhost:8081/personas
+Content-Type: application/json
+
+{
+  "rutDocumentoIdentidad": "33333333-3",
+  "nombres": "Carlos",
+  "apellidos": "Ramirez",
+  "fechaNacimiento": "1970-01-15",
+  "email": "carlos.ramirez@sige.cl",
+  "telefono": "+56933333333",
+  "usuario": "cramirez",
+  "password": "claveSegura789"
+}
+
+### 6. Asignar rol DIRECTIVO (usa el id devuelto en request 5, ej. 3)
+POST http://localhost:8081/personas/3/roles
+Content-Type: application/json
+
+{ "nombreRol": "DIRECTIVO" }
+
+### =========================================
+### Anota aqui los personaRolId reales que te devolvieron las requests 2, 4 y 6:
+### DOCENTE personaRolId  = ___
+### INSPECTOR personaRolId = ___
+### DIRECTIVO personaRolId = ___
+### Los uso como referencia en el resto del archivo (ajusta si difieren)
+### =========================================
+
+### 7. Crear NivelEducativo en ms-academico
+POST http://localhost:8083/niveles-educativos
+Content-Type: application/json
+
+{ "nombre": "Educacion Media" }
+
+### 8. Crear PeriodoAcademico
+POST http://localhost:8083/periodos-academicos
+Content-Type: application/json
+
+{
+  "nombreAnio": "2026",
+  "fechaInicio": "2026-03-01",
+  "fechaTermino": "2026-12-15"
+}
+
+### 9. Crear Curso, con el DOCENTE (personaRolId=1) como Profesor Jefe
+POST http://localhost:8083/cursos
+Content-Type: application/json
+
+{
+  "nivelEducativoId": 1,
+  "periodoAcademicoId": 1,
+  "paralelo": "A",
+  "profesorJefePersonaRolId": 1
+}
+
+### =========================================
+### ms-calendario-reuniones — Verificacion completa
+### Puerto: 8088
+### =========================================
+
+### 10. Reunion tipo CURSO, convocante = Profesor Jefe real -> debe dar 201
+POST http://localhost:8088/reuniones
+Content-Type: application/json
+
+{
+  "tipo": "CURSO",
+  "fecha": "2026-09-01",
+  "horaInicio": "18:00:00",
+  "horaTermino": "19:30:00",
+  "convocantePersonaRolId": 1,
+  "lugarModalidad": "Sala de clases, presencial",
+  "cursoId": 1,
+  "participantesPersonaIds": [1]
+}
+
+### 11. Reunion tipo CURSO, convocante NO es el Profesor Jefe de ese curso -> debe dar 403
+### (usa el personaRolId del INSPECTOR o DIRECTIVO, cualquiera que no sea Docente/no sea el jefe de este curso)
+POST http://localhost:8088/reuniones
+Content-Type: application/json
+
+{
+  "tipo": "CURSO",
+  "fecha": "2026-09-01",
+  "horaInicio": "18:00:00",
+  "horaTermino": "19:30:00",
+  "convocantePersonaRolId": 2,
+  "lugarModalidad": "Sala de clases",
+  "cursoId": 1,
+  "participantesPersonaIds": [2]
+}
+
+### 12. Reunion tipo CURSO SIN cursoId -> debe dar 422
+POST http://localhost:8088/reuniones
+Content-Type: application/json
+
+{
+  "tipo": "CURSO",
+  "fecha": "2026-09-01",
+  "horaInicio": "18:00:00",
+  "horaTermino": "19:30:00",
+  "convocantePersonaRolId": 1,
+  "lugarModalidad": "Sala",
+  "cursoId": null,
+  "participantesPersonaIds": [1]
+}
+
+### 13. Reunion APODERADO_DOCENTE, convocante Docente -> debe dar 201
+POST http://localhost:8088/reuniones
+Content-Type: application/json
+
+{
+  "tipo": "APODERADO_DOCENTE",
+  "fecha": "2026-09-05",
+  "horaInicio": "16:00:00",
+  "horaTermino": "16:30:00",
+  "convocantePersonaRolId": 1,
+  "lugarModalidad": "Virtual",
+  "cursoId": null,
+  "participantesPersonaIds": [1]
+}
+
+### 14. Reunion CONVIVENCIA_DISCIPLINARIA, convocante Inspector -> debe dar 201
+POST http://localhost:8088/reuniones
+Content-Type: application/json
+
+{
+  "tipo": "CONVIVENCIA_DISCIPLINARIA",
+  "fecha": "2026-09-06",
+  "horaInicio": "10:00:00",
+  "horaTermino": "10:45:00",
+  "convocantePersonaRolId": 2,
+  "lugarModalidad": "Oficina de Inspectoria",
+  "cursoId": null,
+  "participantesPersonaIds": [2]
+}
+
+### 15. Reunion CONVIVENCIA_DISCIPLINARIA, convocante Docente (no autorizado) -> debe dar 403
+POST http://localhost:8088/reuniones
+Content-Type: application/json
+
+{
+  "tipo": "CONVIVENCIA_DISCIPLINARIA",
+  "fecha": "2026-09-06",
+  "horaInicio": "10:00:00",
+  "horaTermino": "10:45:00",
+  "convocantePersonaRolId": 1,
+  "lugarModalidad": "Oficina",
+  "cursoId": null,
+  "participantesPersonaIds": [1]
+}
+
+### 16. Reunion INSTITUCIONAL, convocante Directivo -> debe dar 201
+POST http://localhost:8088/reuniones
+Content-Type: application/json
+
+{
+  "tipo": "INSTITUCIONAL",
+  "fecha": "2026-09-10",
+  "horaInicio": "09:00:00",
+  "horaTermino": "11:00:00",
+  "convocantePersonaRolId": 3,
+  "lugarModalidad": "Salon de actos",
+  "cursoId": null,
+  "participantesPersonaIds": [1, 2, 3]
+}
+
+### 17. Reunion CONSEJO_PROFESORES, convocante Directivo -> debe dar 201
+POST http://localhost:8088/reuniones
+Content-Type: application/json
+
+{
+  "tipo": "CONSEJO_PROFESORES",
+  "fecha": "2026-09-11",
+  "horaInicio": "17:00:00",
+  "horaTermino": "18:00:00",
+  "convocantePersonaRolId": 3,
+  "lugarModalidad": "Sala de profesores",
+  "cursoId": null,
+  "participantesPersonaIds": [1, 3]
+}
+
+### =========================================
+### Estados y consultas
+### =========================================
+
+### 18. Obtener la reunion 1
+GET http://localhost:8088/reuniones/1
+
+### 19. Marcar reunion 1 como REALIZADA
+PATCH http://localhost:8088/reuniones/1/realizar
+
+### 20. Confirmar el cambio de estado
+GET http://localhost:8088/reuniones/1
+
+### 21. Cancelar la reunion 2 (si se creo pese al 403 esperado, ajusta el id real)
+PATCH http://localhost:8088/reuniones/2/cancelar
+
+### 22. Listar reuniones entre fechas
+GET http://localhost:8088/reuniones?desde=2026-09-01&hasta=2026-09-30
+
+### =========================================
+### EventoInstitucional
+### =========================================
+
+### 23. Crear dia no lectivo
+POST http://localhost:8088/eventos-institucionales
+Content-Type: application/json
+
+{
+  "tipo": "DIA_NO_LECTIVO",
+  "fecha": "2026-09-18",
+  "descripcion": "Fiestas Patrias"
+}
+
+### 24. Crear actividad institucional
+POST http://localhost:8088/eventos-institucionales
+Content-Type: application/json
+
+{
+  "tipo": "ACTIVIDAD_INSTITUCIONAL",
+  "fecha": "2026-09-20",
+  "descripcion": "Aniversario del colegio"
+}
+
+### 25. Listar eventos entre fechas
+GET http://localhost:8088/eventos-institucionales?desde=2026-09-01&hasta=2026-09-30
+
+### =========================================
+### Infraestructura
+### =========================================
+
+### 26. Health check
+GET http://localhost:8088/actuator/health
+
+### 27. Registrado en Eureka -> revisar http://localhost:8761

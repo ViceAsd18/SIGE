@@ -1,0 +1,48 @@
+### =========================================
+### ms-auditoria — Verificacion completa
+### Puerto: 8089
+### =========================================
+
+### 1. Registrar una auditoria manual (simulando lo que Kafka hara despues)
+POST http://localhost:8089/auditoria
+Content-Type: application/json
+
+{
+  "personaId": 1,
+  "rolActivoPersonaRolId": 1,
+  "accion": "MODIFICAR",
+  "entidadAfectadaTipo": "Calificacion",
+  "entidadAfectadaId": 1,
+  "valorAnterior": "5.5",
+  "valorNuevo": "6.0",
+  "motivo": "Correccion de error de digitacion"
+}
+
+### 2. Registrar otra auditoria sobre la MISMA entidad
+POST http://localhost:8089/auditoria
+Content-Type: application/json
+
+{
+  "personaId": 2,
+  "rolActivoPersonaRolId": 2,
+  "accion": "APROBAR",
+  "entidadAfectadaTipo": "Calificacion",
+  "entidadAfectadaId": 1,
+  "valorAnterior": null,
+  "valorNuevo": null,
+  "motivo": "Aprobacion de solicitud de excepcion"
+}
+
+### 3. Consultar historial de esa entidad -> debe traer AMBOS registros
+GET http://localhost:8089/auditoria?entidadTipo=Calificacion&entidadId=1
+
+### 4. Consultar por persona
+GET http://localhost:8089/auditoria?personaId=1
+
+### 5. Sin parametros -> debe dar 400
+GET http://localhost:8089/auditoria
+
+### 6. Health check
+GET http://localhost:8089/actuator/health
+
+### 7. Registrado en Eureka -> revisar http://localhost:8761

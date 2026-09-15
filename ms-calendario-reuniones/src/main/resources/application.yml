@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: ms-calendario-reuniones
+  config:
+    import: "configserver:http://localhost:8888"

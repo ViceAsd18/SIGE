@@ -1,0 +1,162 @@
+name: sige
+
+networks:
+  sige-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+
+x-service-common: &service-common
+  networks: [sige-network]
+  environment:
+    SPRING_PROFILES_ACTIVE: docker
+    CONFIG_SERVER_URL: "http://config-server:8888"
+
+services:
+
+  # ============================================================
+  # Base de datos unica, 9 esquemas
+  # ============================================================
+  mysql:
+    image: mysql:8.4
+    networks: [sige-network]
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass-local-dev
+    ports: ["3307:3306"]
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass-local-dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ============================================================
+  # Infraestructura
+  # ============================================================
+  config-server:
+    build: ./config-server
+    networks: [sige-network]
+    ports: ["8888:8888"]
+    volumes:
+      - type: bind
+        source: C:/Users/vicen/sige-config-repo
+        target: /config-repo
+    environment:
+      SPRING_CLOUD_CONFIG_SERVER_GIT_URI: "file:///config-repo"
+      SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL: "main"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+  eureka-server:
+    build: ./eureka-server
+    networks: [sige-network]
+    ports: ["8761:8761"]
+    environment:
+      CONFIG_SERVER_URL: "http://config-server:8888"
+    depends_on:
+      config-server: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+
+  gateway:
+    build: ./gateway
+    <<: *service-common
+    ports: ["8080:8080"]
+    depends_on:
+      config-server: { condition: service_healthy }
+      eureka-server: { condition: service_healthy }
+
+  # ============================================================
+  # Microservicios de dominio — todos apuntan al mismo host "mysql"
+  # ============================================================
+  ms-identidad-acceso:
+    build: ./ms-identidad-acceso
+    <<: *service-common
+    ports: ["8081:8081"]
+    depends_on:
+      config-server: { condition: service_healthy }
+      eureka-server: { condition: service_healthy }
+      mysql: { condition: service_healthy }
+
+  ms-estudiantes:
+    build: ./ms-estudiantes
+    <<: *service-common
+    ports: ["8082:8082"]
+    depends_on:
+      config-server: { condition: service_healthy }
+      eureka-server: { condition: service_healthy }
+      mysql: { condition: service_healthy }
+
+  ms-academico:
+    build: ./ms-academico
+    <<: *service-common
+    ports: ["8083:8083"]
+    depends_on:
+      config-server: { condition: service_healthy }
+      eureka-server: { condition: service_healthy }
+      mysql: { condition: service_healthy }
+
+  ms-evaluaciones-notas:
+    build: ./ms-evaluaciones-notas
+    <<: *service-common
+    ports: ["8084:8084"]
+    depends_on:
+      config-server: { condition: service_healthy }
+      eureka-server: { condition: service_healthy }
+      mysql: { condition: service_healthy }
+
+  ms-anotaciones:
+    build: ./ms-anotaciones
+    <<: *service-common
+    ports: ["8085:8085"]
+    depends_on:
+      config-server: { condition: service_healthy }
+      eureka-server: { condition: service_healthy }
+      mysql: { condition: service_healthy }
+
+  ms-mensajeria:
+    build: ./ms-mensajeria
+    <<: *service-common
+    ports: ["8086:8086"]
+    depends_on:
+      config-server: { condition: service_healthy }
+      eureka-server: { condition: service_healthy }
+      mysql: { condition: service_healthy }
+
+  ms-comunicaciones:
+    build: ./ms-comunicaciones
+    <<: *service-common
+    ports: ["8087:8087"]
+    depends_on:
+      config-server: { condition: service_healthy }
+      eureka-server: { condition: service_healthy }
+      mysql: { condition: service_healthy }
+
+  ms-calendario-reuniones:
+    build: ./ms-calendario-reuniones
+    <<: *service-common
+    ports: ["8088:8088"]
+    depends_on:
+      config-server: { condition: service_healthy }
+      eureka-server: { condition: service_healthy }
+      mysql: { condition: service_healthy }
+
+  ms-auditoria:
+    build: ./ms-auditoria
+    <<: *service-common
+    ports: ["8089:8089"]
+    depends_on:
+      config-server: { condition: service_healthy }
+      eureka-server: { condition: service_healthy }
+      mysql: { condition: service_healthy }

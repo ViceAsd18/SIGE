@@ -1,5 +1,6 @@
 package cl.sige.plataforma.ms_anotaciones.service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -12,6 +13,9 @@ import cl.sige.plataforma.ms_anotaciones.client.dto.PersonaRolClientResponse;
 import cl.sige.plataforma.ms_anotaciones.domain.Anotacion;
 import cl.sige.plataforma.ms_anotaciones.domain.enums.CategoriaAnotacion;
 import cl.sige.plataforma.ms_anotaciones.domain.enums.GravedadAnotacion;
+import cl.sige.plataforma.ms_anotaciones.event.AnotacionCreadaEvent;
+import cl.sige.plataforma.ms_anotaciones.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_anotaciones.event.EventPublisher;
 import cl.sige.plataforma.ms_anotaciones.exception.RecursoInvalidoException;
 import cl.sige.plataforma.ms_anotaciones.exception.RecursoNoEncontradoException;
 import cl.sige.plataforma.ms_anotaciones.repository.AnotacionRepository;
@@ -30,6 +34,8 @@ public class AnotacionService {
     private final EstudiantesClient estudiantesClient;
     private final IdentidadAccesoClient identidadAccesoClient;
 
+    private final EventPublisher eventPublisher;
+
     @Transactional
     public Anotacion crear(Long estudianteId, Long autorPersonaRolId, CategoriaAnotacion categoria, GravedadAnotacion gravedad, String descripcion) {
         
@@ -39,6 +45,15 @@ public class AnotacionService {
         
         Anotacion anotacion = anotacionRepository.save(
             new Anotacion(estudianteId, autorPersonaRolId, categoria, gravedad, descripcion));
+
+        eventPublisher.publicarAnotacionCreada(new AnotacionCreadaEvent(
+            anotacion.getId(), estudianteId, autorPersonaRolId,
+            categoria.name(), gravedad != null ? gravedad.name() : null, anotacion.getFechaCreacion()));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            autorPersonaRolId, autorPersonaRolId, "CREAR", "Anotacion", anotacion.getId(),
+            null, descripcion, null, Instant.now()));
+
         log.info("Anotacion creada: id={}, estudianteId={}, categoria={}", anotacion.getId(), estudianteId, categoria);
         return anotacion;
     }

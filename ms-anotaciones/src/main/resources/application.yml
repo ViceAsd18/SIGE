@@ -3,3 +3,21 @@ spring:
     name: ms-anotaciones
   config:
     import: "configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:mysql://mysql:3306/sige_anotaciones?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Santiago
+  kafka:
+    bootstrap-servers: kafka:29092
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/

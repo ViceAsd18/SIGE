@@ -55,7 +55,7 @@ public class PersonaRolService {
 
     @Transactional(readOnly = true)
     public List<PersonaRol> obtenerRolesActivos(Long personaId) {
-        return personaRolRepository.findByPersonaIdAndEstado(personaId, EstadoRol.ACTIVO);
+        return personaRolRepository.findByPersonaIdAndEstadoConRol(personaId, EstadoRol.ACTIVO);
     }
 
     @Transactional(readOnly = true)

@@ -15,4 +15,7 @@ public interface PersonaRolRepository extends JpaRepository<PersonaRol, Long> {
     @Query("SELECT pr FROM PersonaRol pr JOIN FETCH pr.persona JOIN FETCH pr.rol WHERE pr.id = :id")
     Optional<PersonaRol> findByIdConPersonaYRol(@Param("id") Long id);
 
+    @Query("SELECT pr FROM PersonaRol pr JOIN FETCH pr.rol WHERE pr.persona.id = :personaId AND pr.estado = :estado")
+    List<PersonaRol> findByPersonaIdAndEstadoConRol(@Param("personaId") Long personaId, @Param("estado") EstadoRol estado);
+
 }

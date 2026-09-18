@@ -4,6 +4,9 @@ import cl.sige.plataforma.ms_identidad_acceso.domain.EstadoRol;
 import cl.sige.plataforma.ms_identidad_acceso.domain.Persona;
 import cl.sige.plataforma.ms_identidad_acceso.domain.PersonaRol;
 import cl.sige.plataforma.ms_identidad_acceso.domain.Rol;
+import cl.sige.plataforma.ms_identidad_acceso.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_identidad_acceso.event.EventPublisher;
+import cl.sige.plataforma.ms_identidad_acceso.event.RolAsignadoEvent;
 import cl.sige.plataforma.ms_identidad_acceso.exception.RecursoNoEncontradoException;
 import cl.sige.plataforma.ms_identidad_acceso.repository.PersonaRepository;
 import cl.sige.plataforma.ms_identidad_acceso.repository.PersonaRolRepository;
@@ -13,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -25,6 +29,8 @@ public class PersonaRolService {
     private final RolRepository rolRepository;
     private final PersonaRolRepository personaRolRepository;
 
+    private final EventPublisher eventPublisher;
+
     @Transactional
     public PersonaRol asignarRol(Long personaId, String nombreRol) {
         Persona persona = personaRepository.findById(personaId)
@@ -35,6 +41,13 @@ public class PersonaRolService {
 
         PersonaRol personaRol = new PersonaRol(persona, rol, LocalDate.now());
         PersonaRol guardado = personaRolRepository.save(personaRol);
+
+        eventPublisher.publicarRolAsignado(new RolAsignadoEvent(
+            guardado.getId(), personaId, nombreRol));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            personaId, guardado.getId(), "ASIGNAR_ROL", "PersonaRol", guardado.getId(),
+            null, nombreRol, null, Instant.now()));
 
         log.info("Rol asignado: personaId={}, rol={}, personaRolId={}",
                 personaId, nombreRol, guardado.getId());

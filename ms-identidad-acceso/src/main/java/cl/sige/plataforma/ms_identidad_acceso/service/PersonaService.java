@@ -1,11 +1,17 @@
 package cl.sige.plataforma.ms_identidad_acceso.service;
 
 import cl.sige.plataforma.ms_identidad_acceso.domain.Persona;
+import cl.sige.plataforma.ms_identidad_acceso.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_identidad_acceso.event.EventPublisher;
+import cl.sige.plataforma.ms_identidad_acceso.event.PersonaCreadaEvent;
 import cl.sige.plataforma.ms_identidad_acceso.exception.RecursoDuplicadoException;
 import cl.sige.plataforma.ms_identidad_acceso.exception.RecursoNoEncontradoException;
 import cl.sige.plataforma.ms_identidad_acceso.repository.PersonaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.time.Instant;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +23,8 @@ public class PersonaService {
 
     private final PersonaRepository personaRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private final EventPublisher eventPublisher;
 
     @Transactional
     public Persona crear(NuevaPersonaComando comando) {
@@ -45,6 +53,15 @@ public class PersonaService {
                 .build();
 
         Persona guardada = personaRepository.save(persona);
+
+        eventPublisher.publicarPersonaCreada(new PersonaCreadaEvent(
+            guardada.getId(), guardada.getUsuario(), guardada.getEmail()));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            guardada.getId(), null, "CREAR", "Persona", guardada.getId(),
+            null, guardada.getUsuario(), null, Instant.now()));
+
+
         log.info("Persona creada: id={}, usuario={}", guardada.getId(), guardada.getUsuario());
         return guardada;
     }

@@ -12,3 +12,98 @@ GET http://localhost:8081/actuator/health
 
 ### 5. Accesible A TRAVÉS del Gateway (no directo)
 GET http://localhost:8080/api/identidad/actuator/health
+
+
+
+
+
+
+
+
+
+###
+### =========================================
+### 0. Verificacion de salud de los 3 servicios con Kafka
+### =========================================
+
+### 0.1
+GET http://localhost:8085/actuator/health
+
+### 0.2
+GET http://localhost:8087/actuator/health
+
+### 0.3
+GET http://localhost:8089/actuator/health
+
+### =========================================
+### 1. Datos base — MySQL de este entorno Docker esta vacio
+### (si ya los creaste antes en este mismo entorno, salta al paso 4)
+### =========================================
+
+### 1.1 Crear Persona
+POST http://localhost:8081/personas
+Content-Type: application/json
+
+{
+  "rutDocumentoIdentidad": "79999999-9", "nombres": "Juan", "apellidos": "Perez",
+  "fechaNacimiento": "1980-05-10", "email": "juan.perez97@sige.cl",
+  "telefono": "+56911111111", "usuario": "jperez97", "password": "claveSegura123"
+}
+
+### 1.2 Asignar rol DOCENTE
+POST http://localhost:8081/personas/2/roles
+Content-Type: application/json
+
+{ "nombreRol": "DOCENTE" }
+
+### 1.3 Crear Estudiante
+POST http://localhost:8082/estudiantes
+Content-Type: application/json
+
+{ "personaRolId": 3 }
+
+
+
+### =========================================
+### 2. El flujo real de Kafka
+### =========================================
+
+###
+GET http://localhost:8081/personas/1/roles
+
+###
+GET http://localhost:8081/personas/1
+###
+GET http://localhost:8081/personas/1/roles
+
+### 2.1 Crear la Anotacion — publica AnotacionCreadaEvent y AuditoriaEvent a Kafka
+POST http://localhost:8085/anotaciones
+Content-Type: application/json
+
+{
+  "estudianteId": 8,
+  "autorPersonaRolId": 1,
+  "categoria": "POSITIVA",
+  "gravedad": null,
+  "descripcion": "Prueba de flujo completo con Kafka"
+}
+
+### 2.2 Verificar que ms-comunicaciones genero la Notificacion automaticamente
+GET http://localhost:8087/notificaciones/destinatario/1
+
+### 2.3 Verificar que ms-auditoria registro el evento automaticamente
+GET http://localhost:8089/auditoria?entidadTipo=Anotacion&entidadId=1
+
+
+
+###
+POST http://localhost:8081/personas
+Content-Type: application/json
+
+{
+  "rutDocumentoIdentidad": "43444444-4", "nombres": "Sofia", "apellidos": "Castro",
+  "fechaNacimiento": "1993-06-06", "email": "sofia.castro3@sige.cl",
+  "telefono": "+56944444444", "usuario": "scastro3", "password": "clave123456"
+}
+###
+GET http://localhost:8089/auditoria?entidadTipo=Persona&entidadId=14

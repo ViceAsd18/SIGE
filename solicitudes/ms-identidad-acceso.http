@@ -76,3 +76,4 @@ PATCH http://localhost:8081/personas/roles/2/desactivar
 
 ### 6. Confirmar que ya no aparece como activo
 GET http://localhost:8081/personas/3/roles
+

@@ -1,5 +1,10 @@
 package cl.sige.plataforma.ms_estudiantes.service;
 
+import cl.sige.plataforma.ms_estudiantes.event.ApoderadoEstudianteAsociadoEvent;
+import cl.sige.plataforma.ms_estudiantes.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_estudiantes.event.EventPublisher;
+
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -22,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ApoderadoEstudianteService {
 
+    private final EventPublisher eventPublisher;
     private final ApoderadoRepository apoderadoRepository;
     private final EstudianteRepository estudianteRepository;
     private final ApoderadoEstudianteRepository apoderadoEstudianteRepository;
@@ -40,6 +46,14 @@ public class ApoderadoEstudianteService {
 
         ApoderadoEstudiante relacion = apoderadoEstudianteRepository.save(
                 new ApoderadoEstudiante(apoderado, estudiante, tipoRelacion));
+
+        eventPublisher.publicarApoderadoEstudianteAsociado(new ApoderadoEstudianteAsociadoEvent(
+            relacion.getId(), apoderadoId, estudianteId, tipoRelacion.name()));
+        
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            null, null, "CREAR", "ApoderadoEstudiante", relacion.getId(),
+            null, "apoderadoId=" + apoderadoId + ",estudianteId=" + estudianteId + ",tipo=" + tipoRelacion,
+            null, Instant.now()));
 
         log.info("Relacion creada: apoderadoId={}, estudianteId={}, tipo={}",
                 apoderadoId, estudianteId, tipoRelacion);

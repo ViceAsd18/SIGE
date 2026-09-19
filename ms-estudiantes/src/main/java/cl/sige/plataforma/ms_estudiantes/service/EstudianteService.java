@@ -1,8 +1,14 @@
 package cl.sige.plataforma.ms_estudiantes.service;
 
+import cl.sige.plataforma.ms_estudiantes.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_estudiantes.event.EstudianteCreadoEvent;
+import cl.sige.plataforma.ms_estudiantes.event.EventPublisher;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.time.Instant;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +25,7 @@ import cl.sige.plataforma.ms_estudiantes.repository.EstudianteRepository;
 @Slf4j
 public class EstudianteService {
 
+    private final EventPublisher eventPublisher;
     private final EstudianteRepository estudianteRepository;
     private final IdentidadAccesoClient identidadAccesoClient;
 
@@ -31,6 +38,14 @@ public class EstudianteService {
         validarPersonaRol(personaRolId, "ESTUDIANTE");
 
         Estudiante estudiante = estudianteRepository.save(new Estudiante(personaRolId));
+
+        eventPublisher.publicarEstudianteCreado(new EstudianteCreadoEvent(
+            estudiante.getId(), personaRolId));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+             personaRolId, personaRolId, "CREAR", "Estudiante", estudiante.getId(),
+             null, "personaRolId=" + personaRolId, null, Instant.now()));
+
         log.info("Estudiante creado: id={}, personaRolId={}", estudiante.getId(), personaRolId);
         return estudiante;
     }

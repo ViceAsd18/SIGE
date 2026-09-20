@@ -5,6 +5,9 @@ import java.time.LocalDate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import cl.sige.plataforma.ms_academico.domain.PeriodoAcademico;
+import cl.sige.plataforma.ms_academico.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_academico.event.EventPublisher;
+import cl.sige.plataforma.ms_academico.event.PeriodoAcademicoCerradoEvent;
 import cl.sige.plataforma.ms_academico.exception.RecursoDuplicadoException;
 import cl.sige.plataforma.ms_academico.exception.RecursoNoEncontradoException;
 import cl.sige.plataforma.ms_academico.repository.PeriodoAcademicoRepository;
@@ -17,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 public class PeriodoAcademicoService {
     
     private final PeriodoAcademicoRepository periodoAcademicoRepository;
+
+    private final EventPublisher eventPublisher;
 
     @Transactional
     public PeriodoAcademico crear(String nombreAnio, LocalDate fechaInicio, LocalDate fechaFin) {
@@ -42,6 +47,13 @@ public class PeriodoAcademicoService {
         PeriodoAcademico periodo = obtenerPorId(id);
         periodo.cerrar();
         log.info("PeriodoAcademico cerrado: id={}",id);
+
+        eventPublisher.publicarPeriodoAcademicoCerrado(new PeriodoAcademicoCerradoEvent(
+            periodo.getId(), periodo.getNombreAnio()));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            null, null, "CERRAR", "PeriodoAcademico", id,
+            "ABIERTO", "CERRADO", null, java.time.Instant.now()));
     }
 
     @Transactional(readOnly = true)

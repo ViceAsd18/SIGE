@@ -1,5 +1,10 @@
 package cl.sige.plataforma.ms_academico.service;
 
+import cl.sige.plataforma.ms_academico.event.AsignacionDocenteEvent;
+import cl.sige.plataforma.ms_academico.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_academico.event.EventPublisher;
+
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -24,6 +29,7 @@ import cl.sige.plataforma.ms_academico.exception.RecursoNoEncontradoException;
 @Slf4j
 public class AsignacionDocenteService {
     
+    private final EventPublisher eventPublisher;
     private final AsignacionDocenteRepository asignacionDocenteRepository;
     private final AsignaturaService asignaturaService;
     private final CursoService cursoService;
@@ -50,6 +56,15 @@ public class AsignacionDocenteService {
         AsignacionDocente asignacion = asignacionDocenteRepository.save(
             new AsignacionDocente(docentePersonaRolId, asignatura, curso, fechaIncioVigencia));
         log.info("AsignacionDocente creada: id={}", asignacion.getId());
+
+        eventPublisher.publicarAsignacionDocente(new AsignacionDocenteEvent(
+            asignacion.getId(), docentePersonaRolId, asignaturaId, cursoId,
+            "CREADA", fechaIncioVigencia));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            docentePersonaRolId, docentePersonaRolId, "CREAR", "AsignacionDocente", asignacion.getId(),
+            null, "docentePersonaRolId=" + docentePersonaRolId, null, Instant.now()));
+
         return asignacion;
 
     }
@@ -60,6 +75,15 @@ public class AsignacionDocenteService {
             .orElseThrow(() -> new RecursoNoEncontradoException("AsignacionDocente", id));
         asignacion.finalizarVigencia(fechaTermino);
         log.info("AsignacionDocente finalizada: id={}", id);
+
+        eventPublisher.publicarAsignacionDocente(new AsignacionDocenteEvent(
+            id, asignacion.getDocentePersonaRolId(), asignacion.getAsignatura().getId(),
+            asignacion.getCurso().getId(), "FINALIZADA", fechaTermino));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            null, null, "FINALIZAR", "AsignacionDocente", id,
+            "VIGENTE", "NO_VIGENTE", null, Instant.now()));
+
     }
 
     @Transactional(readOnly = true)

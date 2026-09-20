@@ -4,6 +4,9 @@ import cl.sige.plataforma.ms_academico.client.EstudiantesClient;
 import cl.sige.plataforma.ms_academico.domain.Curso;
 import cl.sige.plataforma.ms_academico.domain.Matricula;
 import cl.sige.plataforma.ms_academico.domain.enums.EstadoMatricula;
+import cl.sige.plataforma.ms_academico.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_academico.event.EventPublisher;
+import cl.sige.plataforma.ms_academico.event.MatriculaEvent;
 import cl.sige.plataforma.ms_academico.exception.RecursoDuplicadoException;
 import cl.sige.plataforma.ms_academico.exception.RecursoInvalidoException;
 import cl.sige.plataforma.ms_academico.exception.RecursoNoEncontradoException;
@@ -14,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Service
@@ -24,6 +28,8 @@ public class MatriculaService {
     private final MatriculaRepository matriculaRepository;
     private final CursoService cursoService;
     private final EstudiantesClient estudiantesClient;
+
+    private final EventPublisher eventPublisher;    
 
     @Transactional
     public Matricula crear(Long estudianteId, Long cursoId, LocalDate fechaInicioVigencia) {
@@ -41,6 +47,15 @@ public class MatriculaService {
                 new Matricula(estudianteId, curso, fechaInicioVigencia));
         log.info("Matricula creada: id={}, estudianteId={}, cursoId={}",
                 matricula.getId(), estudianteId, cursoId);
+
+        eventPublisher.publicarMatricula(new MatriculaEvent(
+                matricula.getId(), estudianteId, cursoId, "ACTIVA", fechaInicioVigencia));
+        
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+                null, null, "CREAR", "Matricula", matricula.getId(),
+                null, "estudianteId=" + estudianteId + ",cursoId=" + cursoId, null, Instant.now()
+        ));
+
         return matricula;
     }
 
@@ -64,6 +79,14 @@ public class MatriculaService {
 
         log.info("Cambio de curso: matricula anterior id={} finalizada, nueva matricula id={}",
                 matriculaActivaId, nuevaMatricula.getId());
+        
+        eventPublisher.publicarMatricula(new MatriculaEvent(
+                nuevaMatricula.getId(), matriculaActual.getEstudianteId(), nuevoCursoId, "ACTIVA", LocalDate.now()));
+        
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+                null, null, "CAMBIAR_CURSO", "Matricula", matriculaActivaId,
+                "ACTIVA", "FINALIZADA", motivo, Instant.now()));
+
         return nuevaMatricula;
     }
 
@@ -73,6 +96,14 @@ public class MatriculaService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Matricula", matriculaId));
         matricula.retirar(motivo);
         log.info("Matricula retirada: id={}", matriculaId);
+
+        eventPublisher.publicarMatricula(new MatriculaEvent(
+                matriculaId, matricula.getEstudianteId(), matricula.getCurso().getId(), "RETIRADA", LocalDate.now()));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+                null, null, "RETIRAR", "Matricula", matriculaId,
+                "ACTIVA", "RETIRADA", motivo, java.time.Instant.now()));
+
     }
 
     private void validarEstudiante(Long estudianteId) {

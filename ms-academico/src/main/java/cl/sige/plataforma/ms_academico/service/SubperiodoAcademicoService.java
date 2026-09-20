@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import cl.sige.plataforma.ms_academico.domain.SubperiodoAcademico;
+import cl.sige.plataforma.ms_academico.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_academico.event.EventPublisher;
+import cl.sige.plataforma.ms_academico.event.SubperiodoAcademicoCerradoEvent;
 import cl.sige.plataforma.ms_academico.exception.RecursoNoEncontradoException;
 import cl.sige.plataforma.ms_academico.domain.PeriodoAcademico;
 
@@ -21,6 +24,8 @@ public class SubperiodoAcademicoService {
     
     private final SubperiodoAcademicoRepository subperiodoAcademicoRepository;
     private final PeriodoAcademicoService periodoAcademicoService;
+
+    private final EventPublisher eventPublisher;
 
     @Transactional
     public SubperiodoAcademico crear(Long periodoAcademicoId, String nombre, LocalDate fechaInicio, LocalDate fechaTermino) {
@@ -43,6 +48,14 @@ public class SubperiodoAcademicoService {
         SubperiodoAcademico subperiodo = subperiodoAcademicoRepository.findById(id)
             .orElseThrow(() -> new RecursoNoEncontradoException("SubperiodoAcademico", id));
         subperiodo.cerrar();
+
+        eventPublisher.publicarSubperiodoAcademicoCerrado(new SubperiodoAcademicoCerradoEvent(
+            subperiodo.getId(), subperiodo.getPeriodoAcademico().getId(), subperiodo.getNombre()));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            null, null, "CERRAR", "SubperiodoAcademico", id,
+            "ABIERTO", "CERRADO", null, java.time.Instant.now()));
+        
     }
 
     @Transactional

@@ -1,5 +1,7 @@
 package cl.sige.plataforma.ms_academico.service;
 
+import java.time.Instant;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 import cl.sige.plataforma.ms_academico.domain.Curso;
 import cl.sige.plataforma.ms_academico.domain.NivelEducativo;
 import cl.sige.plataforma.ms_academico.domain.PeriodoAcademico;
+import cl.sige.plataforma.ms_academico.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_academico.event.CursoCreadoEvent;
+import cl.sige.plataforma.ms_academico.event.EventPublisher;
 import cl.sige.plataforma.ms_academico.exception.RecursoDuplicadoException;
 import cl.sige.plataforma.ms_academico.exception.RecursoInvalidoException;
 import cl.sige.plataforma.ms_academico.exception.RecursoNoEncontradoException;
@@ -26,6 +31,8 @@ public class CursoService {
     private final NivelEducativoService nivelEducativoService;
     private final PeriodoAcademicoService periodoAcademicoService;
     private final IdentidadAccesoClient identidadAccesoClient;
+
+    private final EventPublisher eventPublisher;
 
     @Transactional
     public Curso crear(Long nivelEducativoId, Long periodoAcademicoId, String paralelo, Long profesorJefePersonaRolId) {
@@ -48,6 +55,15 @@ public class CursoService {
 
         curso = cursoRepository.save(curso);
         log.info("Curso creado con id={}, paralelo={}", curso.getId(), paralelo);
+
+        eventPublisher.publicarCursoCreado(new CursoCreadoEvent(
+            curso.getId(), nivel.getId(), periodo.getId(), curso.getParalelo()));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            profesorJefePersonaRolId, profesorJefePersonaRolId, "CREAR", "CURSO", curso.getId(),
+            null, curso.getParalelo(), null, Instant.now()));
+
+
         return curso;
 
     }

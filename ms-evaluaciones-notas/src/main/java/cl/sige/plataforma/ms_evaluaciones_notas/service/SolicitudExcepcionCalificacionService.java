@@ -1,6 +1,7 @@
 package cl.sige.plataforma.ms_evaluaciones_notas.service;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 
@@ -8,6 +9,9 @@ import cl.sige.plataforma.ms_evaluaciones_notas.client.IdentidadAccesoClient;
 import cl.sige.plataforma.ms_evaluaciones_notas.client.dto.PersonaRolClientResponse;
 import cl.sige.plataforma.ms_evaluaciones_notas.domain.Calificacion;
 import cl.sige.plataforma.ms_evaluaciones_notas.domain.SolicitudExcepcionCalificacion;
+import cl.sige.plataforma.ms_evaluaciones_notas.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_evaluaciones_notas.event.EventPublisher;
+import cl.sige.plataforma.ms_evaluaciones_notas.event.SolicitudExcepcionEvent;
 import cl.sige.plataforma.ms_evaluaciones_notas.exception.RecursoInvalidoException;
 import cl.sige.plataforma.ms_evaluaciones_notas.exception.RecursoNoEncontradoException;
 import cl.sige.plataforma.ms_evaluaciones_notas.repository.CalificacionRepository;
@@ -27,6 +31,8 @@ public class SolicitudExcepcionCalificacionService {
     private final CalificacionService calificacionService;
     private final IdentidadAccesoClient identidadAccesoClient;
 
+    private final EventPublisher eventPublisher;
+
     @Transactional
     public SolicitudExcepcionCalificacion crear(Long calificacionId, Long solicitantePersonaRolId, String motivo) {
         Calificacion calificacion = calificacionRepository.findByIdConEvaluacion(calificacionId)
@@ -37,6 +43,15 @@ public class SolicitudExcepcionCalificacionService {
         SolicitudExcepcionCalificacion solicitud = solicitudRepository.save(
             new SolicitudExcepcionCalificacion(calificacion, solicitantePersonaRolId, motivo));
         log.info("SolicitudExceptionCalificacion creada: id={} calificacionId={}", solicitud.getId(), calificacionId);
+
+        eventPublisher.publicarSolicitudExcepcion(new SolicitudExcepcionEvent(
+            solicitud.getId(), calificacionId, solicitantePersonaRolId, null, "PENDIENTE"
+        ));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            solicitantePersonaRolId, solicitantePersonaRolId, "CREAR", "SolicitudExcepcionCalificacion", solicitud.getId(),
+            null, motivo, null, java.time.Instant.now()));
+        
         return solicitud;
 
     } 
@@ -55,6 +70,15 @@ public class SolicitudExcepcionCalificacionService {
         solicitud.marcarEjecutada();
 
         log.info("SolicitudExceptionCalificacion aprobada y ejecutada: id={}", solicitudId);
+
+        eventPublisher.publicarSolicitudExcepcion(new SolicitudExcepcionEvent(
+            solicitudId, solicitud.getCalificacion().getId(), solicitud.getSolicitantePersonaRolId(),
+            aprobadorPersonaRolId, "APROBADA"));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            aprobadorPersonaRolId, aprobadorPersonaRolId, "APROBAR", "SolicitudExceptionCalificacion", solicitudId,
+            "PENDIENTE", "APROBADA", null, Instant.now()));
+
         return solicitud;
 
     }
@@ -69,6 +93,15 @@ public class SolicitudExcepcionCalificacionService {
         solicitud.rechazar(aprobadorPersonaRolId);
 
         log.info("SolicitudExceptionCalificacion rechazada: id={}", solicitudId);
+
+        eventPublisher.publicarSolicitudExcepcion(new SolicitudExcepcionEvent(
+            solicitudId, solicitud.getCalificacion().getId(), solicitud.getSolicitantePersonaRolId(),
+            aprobadorPersonaRolId, "RECHAZADA"));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            aprobadorPersonaRolId, aprobadorPersonaRolId, "RECHAZAR", "SolicitudExceptionCalificacion", solicitudId,
+            "PENDIENTE", "RECHAZADA", null, Instant.now()));
+
         return solicitud;
 
     }

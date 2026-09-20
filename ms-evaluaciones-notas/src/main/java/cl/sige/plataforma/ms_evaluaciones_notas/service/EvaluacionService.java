@@ -1,5 +1,6 @@
 package cl.sige.plataforma.ms_evaluaciones_notas.service;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 import org.springframework.stereotype.Service;
@@ -9,6 +10,9 @@ import cl.sige.plataforma.ms_evaluaciones_notas.client.AcademicoClient;
 import cl.sige.plataforma.ms_evaluaciones_notas.client.dto.AsignacionDocenteClientResponse;
 import cl.sige.plataforma.ms_evaluaciones_notas.client.dto.SubperiodoAcademicoClientResponse;
 import cl.sige.plataforma.ms_evaluaciones_notas.domain.Evaluacion;
+import cl.sige.plataforma.ms_evaluaciones_notas.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_evaluaciones_notas.event.EvaluacionCreadaEvent;
+import cl.sige.plataforma.ms_evaluaciones_notas.event.EventPublisher;
 import cl.sige.plataforma.ms_evaluaciones_notas.exception.RecursoInvalidoException;
 import cl.sige.plataforma.ms_evaluaciones_notas.exception.RecursoNoEncontradoException;
 import cl.sige.plataforma.ms_evaluaciones_notas.repository.EvaluacionRepository;
@@ -23,6 +27,8 @@ public class EvaluacionService {
     
     private final EvaluacionRepository evaluacionRepository;
     private final AcademicoClient academicoClient;
+
+    private final EventPublisher eventPublisher;
 
     @Transactional
     public Evaluacion crear(Long asignacionDocenteId, Long subperiodoAcademicoId, String nombre, LocalDate fecha, Integer ponderacion) {
@@ -44,6 +50,14 @@ public class EvaluacionService {
 
         evaluacion = evaluacionRepository.save(evaluacion);
         log.info("Evaluacion creada: id={}, nombre={}", evaluacion.getId(), evaluacion.getNombre());
+
+        eventPublisher.publicarEvaluacionCreada(new EvaluacionCreadaEvent(
+            evaluacion.getId(), asignacionDocenteId, subperiodoAcademicoId, nombre, fecha));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            asignacion.docentePersonaRolId(), asignacion.docentePersonaRolId(), "CREAR", "Evaluacion", evaluacion.getId(),
+            null, nombre, null, Instant.now()));
+
         return evaluacion;
     }
 

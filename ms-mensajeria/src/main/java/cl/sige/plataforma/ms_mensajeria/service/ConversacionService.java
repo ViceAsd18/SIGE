@@ -1,5 +1,6 @@
 package cl.sige.plataforma.ms_mensajeria.service;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -13,6 +14,9 @@ import cl.sige.plataforma.ms_mensajeria.client.dto.AsignacionDocenteClientRespon
 import cl.sige.plataforma.ms_mensajeria.client.dto.PersonaRolClientResponse;
 import cl.sige.plataforma.ms_mensajeria.domain.Conversacion;
 import cl.sige.plataforma.ms_mensajeria.domain.ConversacionParticipante;
+import cl.sige.plataforma.ms_mensajeria.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_mensajeria.event.ConversacionIniciadaEvent;
+import cl.sige.plataforma.ms_mensajeria.event.EventPublisher;
 import cl.sige.plataforma.ms_mensajeria.exception.AccesoNoAutorizadoException;
 import cl.sige.plataforma.ms_mensajeria.exception.RecursoInvalidoException;
 import cl.sige.plataforma.ms_mensajeria.exception.RecursoNoEncontradoException;
@@ -34,6 +38,7 @@ public class ConversacionService {
     private final EstudiantesClient estudiantesClient;
     private final AcademicoClient academicoClient;
 
+    private final EventPublisher eventPublisher;
 
     @Transactional
     public Conversacion iniciarDocenteApoderado(
@@ -52,6 +57,15 @@ public class ConversacionService {
         participanteRepository.save(new ConversacionParticipante(conversacion, apoderadoPersonaId));
 
         log.info("Conversacion iniciada id={}, docentePersonaId={}, apoderadoPersonaId={}", conversacion.getId(), docentePersonaId, apoderadoPersonaId);
+        
+        eventPublisher.publicarConversacionIniciada(new ConversacionIniciadaEvent(
+            conversacion.getId(), docentePersonaId, apoderadoPersonaId));
+        
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            docentePersonaId, docentePersonaRolId, "CREAR", "Conversacion", conversacion.getId(),
+            null, "docente=" + docentePersonaId + ",apoderado=" + apoderadoPersonaId, null, Instant.now()
+        ));
+
         return conversacion;
         
     
@@ -87,11 +101,10 @@ public class ConversacionService {
 
     }
 
-
     private void validarDocenteTieneAsignacionVigente(Long docentePersonaRolId) {
         List<AsignacionDocenteClientResponse> asignaciones = academicoClient.buscarPorDocente(docentePersonaRolId);
         boolean tieneVigente = asignaciones.stream().anyMatch(a -> "VIGENTE".equals(a.estado()));
-        if (tieneVigente) {
+        if (!tieneVigente) {
             throw new AccesoNoAutorizadoException("El Docente con personaRolId=" + docentePersonaRolId + " no tiene ninguna Asignacion vigente");
         }
     }
@@ -105,7 +118,4 @@ public class ConversacionService {
                     "El Apoderado no tiene relacion con el estudiante id=" + estudianteId);
         }
     }
-
-
-
 }

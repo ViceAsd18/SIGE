@@ -12,6 +12,9 @@ import cl.sige.plataforma.ms_mensajeria.domain.Conversacion;
 import cl.sige.plataforma.ms_mensajeria.domain.Mensaje;
 import cl.sige.plataforma.ms_mensajeria.domain.SolicitudAccesoConversacion;
 import cl.sige.plataforma.ms_mensajeria.domain.enums.EstadoSolicitud;
+import cl.sige.plataforma.ms_mensajeria.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_mensajeria.event.EventPublisher;
+import cl.sige.plataforma.ms_mensajeria.event.SolicitudAccesoEvent;
 import cl.sige.plataforma.ms_mensajeria.exception.AccesoNoAutorizadoException;
 import cl.sige.plataforma.ms_mensajeria.exception.RecursoInvalidoException;
 import cl.sige.plataforma.ms_mensajeria.exception.RecursoNoEncontradoException;
@@ -32,6 +35,7 @@ public class SolicitudAccesoConversacionService {
     private final IdentidadAccesoClient identidadAccesoClient;
     private final MensajeService mensajeService;
 
+    private final EventPublisher eventPublisher;
 
     @Transactional
     public SolicitudAccesoConversacion crear(Long conversacionId, Long solicitantePersonaRolId, String motivo) {
@@ -41,6 +45,14 @@ public class SolicitudAccesoConversacionService {
         SolicitudAccesoConversacion solicitud = solicitudRepository.save(
             new SolicitudAccesoConversacion(conversacion, solicitantePersonaRolId, motivo));
         log.info("SolicitudAccesoConversacion creada: id={}, conversacionId={}",  solicitud.getId(), conversacionId);
+        
+        eventPublisher.publicarSolicitudAcceso(new SolicitudAccesoEvent(
+            solicitud.getId(), conversacionId, solicitantePersonaRolId, null, "PENDIENTE"));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            solicitantePersonaRolId, solicitantePersonaRolId, "CREAR", "SolicitudAccesoConversacion", solicitud.getId(),
+            null, motivo, null, java.time.Instant.now()));    
+        
         return solicitud;
 
     }
@@ -55,6 +67,15 @@ public class SolicitudAccesoConversacionService {
         solicitud.aprobar(aprobadorPersonaRolId);
         solicitud.marcarEjecutada();
         log.info("SolicitudAccesoConversacion aprobada y ejecutada: id={}", solicitudId);
+        
+        eventPublisher.publicarSolicitudAcceso(new SolicitudAccesoEvent(
+            solicitudId, solicitud.getConversacion().getId(), solicitud.getSolicitantePersonaRolId(),
+            aprobadorPersonaRolId, "APROBADA"));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            aprobadorPersonaRolId, aprobadorPersonaRolId, "APROBAR", "SolicitudAccesoConversacion", solicitudId,
+            "PENDIENTE", "APROBADA", null, java.time.Instant.now()));
+
         return solicitud;
 
     }
@@ -67,6 +88,15 @@ public class SolicitudAccesoConversacionService {
         validarRol(aprobadorPersonaRolId, Set.of("DIRECTIVO"));
         solicitud.rechazar(aprobadorPersonaRolId);
         log.info("SolicitudAccesoConversacion rechazada: id={}", solicitudId);
+        
+        eventPublisher.publicarSolicitudAcceso(new SolicitudAccesoEvent(
+            solicitudId, solicitud.getConversacion().getId(), solicitud.getSolicitantePersonaRolId(),
+            aprobadorPersonaRolId, "RECHAZADA"));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            aprobadorPersonaRolId, aprobadorPersonaRolId, "RECHAZAR", "SolicitudAccesoConversacion", solicitudId,
+            "PENDIENTE", "RECHAZADA", null, java.time.Instant.now()));
+    
         return solicitud;
 
     }

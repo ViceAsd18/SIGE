@@ -1,5 +1,6 @@
 package cl.sige.plataforma.ms_mensajeria.service;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -7,6 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import cl.sige.plataforma.ms_mensajeria.domain.Conversacion;
 import cl.sige.plataforma.ms_mensajeria.domain.Mensaje;
+import cl.sige.plataforma.ms_mensajeria.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_mensajeria.event.EventPublisher;
+import cl.sige.plataforma.ms_mensajeria.event.MensajeEnviadoEvent;
 import cl.sige.plataforma.ms_mensajeria.exception.AccesoNoAutorizadoException;
 import cl.sige.plataforma.ms_mensajeria.exception.RecursoNoEncontradoException;
 import cl.sige.plataforma.ms_mensajeria.repository.MensajeRepository;
@@ -21,6 +25,8 @@ public class MensajeService {
     private final MensajeRepository mensajeRepository;
     private final ConversacionService conversacionService;
 
+    private final EventPublisher eventPublisher;
+
     @Transactional
     public Mensaje enviar(Long conversacionId, Long autorPersonaId, String contenido) {
         Conversacion conversacion = conversacionService.obtenerPorId(conversacionId);
@@ -28,6 +34,14 @@ public class MensajeService {
 
         Mensaje mensaje = mensajeRepository.save(new Mensaje(conversacion, autorPersonaId, contenido));
         log.info("Mensaje enviado: id={}, conversacion={}, autorPersonaId={}", mensaje.getId(), conversacionId, autorPersonaId);
+        
+        eventPublisher.publicarMensajeEnviado(new MensajeEnviadoEvent(
+            mensaje.getId(), conversacionId, autorPersonaId, contenido));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            autorPersonaId, null, "CREAR", "Mensaje", mensaje.getId(),
+            null, "conversacionId=" +  conversacionId, null, Instant.now()));
+
         return mensaje;
     }
 

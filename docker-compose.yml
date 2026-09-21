@@ -138,6 +138,9 @@ services:
       config-server: { condition: service_healthy }
       eureka-server: { condition: service_healthy }
       mysql: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+
+
 
   ms-comunicaciones:
     build: ./ms-comunicaciones

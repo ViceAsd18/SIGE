@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import cl.sige.plataforma.ms_calendario_reuniones.domain.EventoInstitucional;
 import cl.sige.plataforma.ms_calendario_reuniones.domain.enums.TipoEventoInstitucional;
+import cl.sige.plataforma.ms_calendario_reuniones.event.EventPublisher;
+import cl.sige.plataforma.ms_calendario_reuniones.event.EventoInstitucionalCreadoEvent;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +22,7 @@ public class EventoInstitucionalService {
     
     private final EventoInstitucionalRepository eventoInstitucionalRepository;
 
+    private final EventPublisher eventPublisher;
 
     @Transactional
     public EventoInstitucional crear(TipoEventoInstitucional tipo, LocalDate fecha, String descripcion) {
@@ -30,6 +33,10 @@ public class EventoInstitucionalService {
             .build();
         evento = eventoInstitucionalRepository.save(evento);
         log.info("EventoInstitucional creado: id={}, tipo={}", evento.getId(), tipo);
+
+        eventPublisher.publicarEventoInstitucionalCreado(new EventoInstitucionalCreadoEvent(
+            evento.getId(), evento.getTipo().name(), evento.getFecha()));
+
         return evento;
     }
 

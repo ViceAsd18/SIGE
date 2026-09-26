@@ -1,5 +1,6 @@
 package cl.sige.plataforma.ms_calendario_reuniones.service;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -14,6 +15,9 @@ import cl.sige.plataforma.ms_calendario_reuniones.client.dto.PersonaRolClientRes
 import cl.sige.plataforma.ms_calendario_reuniones.domain.Reunion;
 import cl.sige.plataforma.ms_calendario_reuniones.domain.ReunionParticipante;
 import cl.sige.plataforma.ms_calendario_reuniones.domain.enums.TipoReunion;
+import cl.sige.plataforma.ms_calendario_reuniones.event.AuditoriaEvent;
+import cl.sige.plataforma.ms_calendario_reuniones.event.EventPublisher;
+import cl.sige.plataforma.ms_calendario_reuniones.event.ReunionEvent;
 import cl.sige.plataforma.ms_calendario_reuniones.exception.AccesoNoAutorizadoException;
 import cl.sige.plataforma.ms_calendario_reuniones.exception.RecursoInvalidoException;
 import cl.sige.plataforma.ms_calendario_reuniones.exception.RecursoNoEncontradoException;
@@ -33,6 +37,8 @@ public class ReunionService {
     private final IdentidadAccesoClient identidadAccesoClient;
     private final AcademicoClient academicoClient;
 
+    private final EventPublisher eventPublisher;
+
     @Transactional
     public Reunion crear(TipoReunion tipo, LocalDate fecha, LocalTime horaInicio, LocalTime horaTermino, 
         Long convocantePersonaRolId, String lugarModalidad, Long cursoId, List<Long> participantePersonaIds) {
@@ -48,6 +54,14 @@ public class ReunionService {
         }
 
         log.info("Reunion creada: id={}, tipo={}, convocantePersonaRolId={}", reunion.getId(), tipo, convocantePersonaRolId);
+        
+        eventPublisher.publicarReunion(new ReunionEvent(
+            reunion.getId(), tipo.name(), fecha, horaInicio, convocantePersonaRolId, "PROGRAMADA"));
+        
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            convocantePersonaRolId, convocantePersonaRolId, "CREAR", "Reunion", reunion.getId(),
+            null, tipo.name(), null, Instant.now()));
+
         return reunion;
 
     }
@@ -57,6 +71,14 @@ public class ReunionService {
         Reunion reunion = obtenerPorId(id);
         reunion.marcarRealizada();
         log.info("Reunion marcada como realizada: id={}", id);
+
+        eventPublisher.publicarReunion(new ReunionEvent(
+            id, reunion.getTipo().name(), reunion.getFecha(), reunion.getHoraInicio(),
+            reunion.getConvocantePersonaRolId(), "REALIZADA"));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            null, null, "MARCAR_REALIZADA", "Reunion", id, "PROGRAMADA",
+            "REALIZADA", null, Instant.now()));
     }
 
     @Transactional
@@ -64,9 +86,15 @@ public class ReunionService {
         Reunion reunion = obtenerPorId(id);
         reunion.cancelar();
         log.info("Reunion Cancelada: id={}", id);
+
+        eventPublisher.publicarReunion(new ReunionEvent(
+            id, reunion.getTipo().name(), reunion.getFecha(), reunion.getHoraInicio(),
+            reunion.getConvocantePersonaRolId(), "CANCELADA"));
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            null, null, "CANCELAR", "Reunion", id, "PROGRAMADA",
+            "CANCELADA", null, Instant.now()));
     }
-
-
 
     @Transactional(readOnly = true)
     public Reunion obtenerPorId(Long id) {

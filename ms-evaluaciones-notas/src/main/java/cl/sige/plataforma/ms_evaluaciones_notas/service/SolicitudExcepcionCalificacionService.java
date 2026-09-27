@@ -33,23 +33,27 @@ public class SolicitudExcepcionCalificacionService {
 
     private final EventPublisher eventPublisher;
 
+
+    private static final String ENTIDAD_TIPO = "SolicitudExcepcionCalificacion";
+
     @Transactional
-    public SolicitudExcepcionCalificacion crear(Long calificacionId, Long solicitantePersonaRolId, String motivo) {
+    public SolicitudExcepcionCalificacion crear(Long calificacionId, Long solicitantePersonaRolId, String motivo, BigDecimal nuevoResultado) {
         Calificacion calificacion = calificacionRepository.findByIdConEvaluacion(calificacionId)
             .orElseThrow(() -> new RecursoNoEncontradoException("Calificacion", calificacionId));
     
         validarRol(solicitantePersonaRolId, "DOCENTE");
 
         SolicitudExcepcionCalificacion solicitud = solicitudRepository.save(
-            new SolicitudExcepcionCalificacion(calificacion, solicitantePersonaRolId, motivo));
-        log.info("SolicitudExceptionCalificacion creada: id={} calificacionId={}", solicitud.getId(), calificacionId);
+            new SolicitudExcepcionCalificacion(calificacion, solicitantePersonaRolId, motivo, nuevoResultado));
+        log.info("SolicitudExceptionCalificacion creada: id={} calificacionId={} nuevoResultado={}",
+        solicitud.getId(), calificacionId, nuevoResultado);
 
         eventPublisher.publicarSolicitudExcepcion(new SolicitudExcepcionEvent(
             solicitud.getId(), calificacionId, solicitantePersonaRolId, null, "PENDIENTE"
         ));
 
         eventPublisher.publicarAuditoria(new AuditoriaEvent(
-            solicitantePersonaRolId, solicitantePersonaRolId, "CREAR", "SolicitudExcepcionCalificacion", solicitud.getId(),
+            solicitantePersonaRolId, solicitantePersonaRolId, "CREAR", ENTIDAD_TIPO, solicitud.getId(),
             null, motivo, null, java.time.Instant.now()));
         
         return solicitud;
@@ -57,16 +61,14 @@ public class SolicitudExcepcionCalificacionService {
     } 
 
     @Transactional
-    public SolicitudExcepcionCalificacion aprobar(Long solicitudId, Long aprobadorPersonaRolId, BigDecimal nuevoResultado) {
+    public SolicitudExcepcionCalificacion aprobar(Long solicitudId, Long aprobadorPersonaRolId) {
         SolicitudExcepcionCalificacion solicitud = solicitudRepository.findById(solicitudId)
-            .orElseThrow(() -> new RecursoNoEncontradoException("SolicitudExcepcionCalificacion", solicitudId));
+            .orElseThrow(() -> new RecursoNoEncontradoException("SolicitudExceptionCalificacion", solicitudId));
 
         validarRol(aprobadorPersonaRolId, "DIRECTIVO");
 
         solicitud.aprobar(aprobadorPersonaRolId);
-        //Ejecuta la modificacion directamente sobre la calificacion, sin pasar por CalificacionService.modificar() por que ese metodo exige el
-        //Subperiodo ABIERTO - la excepcion existe justamente para el caso contrario.
-        solicitud.getCalificacion().modificar(nuevoResultado);
+        solicitud.getCalificacion().modificar(solicitud.getNuevoResultado());
         solicitud.marcarEjecutada();
 
         log.info("SolicitudExceptionCalificacion aprobada y ejecutada: id={}", solicitudId);
@@ -76,7 +78,7 @@ public class SolicitudExcepcionCalificacionService {
             aprobadorPersonaRolId, "APROBADA"));
 
         eventPublisher.publicarAuditoria(new AuditoriaEvent(
-            aprobadorPersonaRolId, aprobadorPersonaRolId, "APROBAR", "SolicitudExceptionCalificacion", solicitudId,
+            aprobadorPersonaRolId, aprobadorPersonaRolId, "APROBAR", ENTIDAD_TIPO, solicitudId,
             "PENDIENTE", "APROBADA", null, Instant.now()));
 
         return solicitud;
@@ -86,7 +88,7 @@ public class SolicitudExcepcionCalificacionService {
     @Transactional
     public SolicitudExcepcionCalificacion rechazar(Long solicitudId, Long aprobadorPersonaRolId) {
         SolicitudExcepcionCalificacion solicitud = solicitudRepository.findById(solicitudId)
-            .orElseThrow(() -> new RecursoNoEncontradoException("SolicitudExcepcionCalificacion", solicitudId));
+            .orElseThrow(() -> new RecursoNoEncontradoException("SolicitudExceptionCalificacion", solicitudId));
 
         validarRol(aprobadorPersonaRolId, "DIRECTIVO");
 
@@ -99,7 +101,7 @@ public class SolicitudExcepcionCalificacionService {
             aprobadorPersonaRolId, "RECHAZADA"));
 
         eventPublisher.publicarAuditoria(new AuditoriaEvent(
-            aprobadorPersonaRolId, aprobadorPersonaRolId, "RECHAZAR", "SolicitudExceptionCalificacion", solicitudId,
+            aprobadorPersonaRolId, aprobadorPersonaRolId, "RECHAZAR", ENTIDAD_TIPO, solicitudId,
             "PENDIENTE", "RECHAZADA", null, Instant.now()));
 
         return solicitud;

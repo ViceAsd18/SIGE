@@ -1,5 +1,6 @@
 package cl.sige.plataforma.ms_evaluaciones_notas.domain;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 
@@ -36,9 +37,9 @@ public class SolicitudExcepcionCalificacion {
 
     //Referencia cruzada a PERSONA_ROL en ms-identidad-acceso
     @Column(name = "solicitante_persona_rol_id", nullable = false)
-    private Long solicitudPersonaRolId;
+    private Long solicitantePersonaRolId;
 
-    @Column(name = "aprobador_persona_rol_id", nullable = false)
+    @Column(name = "aprobador_persona_rol_id")
     private Long aprobadorPersonaRolId;
 
     @Column(name = "motivo", nullable = false, length = 500)
@@ -54,10 +55,14 @@ public class SolicitudExcepcionCalificacion {
     @Column(name = "fecha_resolucion")
     private LocalDateTime fechaResolucion;
 
-    public SolicitudExcepcionCalificacion(Calificacion calificacion, Long solicitudPersonaRolId, String motivo) {
+    @Column(name = "nuevo_resultado", nullable = false, precision = 2, scale = 1)
+    private BigDecimal nuevoResultado;
+
+    public SolicitudExcepcionCalificacion(Calificacion calificacion, Long solicitudPersonaRolId, String motivo, BigDecimal nuevoResultado) {
         this.calificacion = calificacion;
-        this.solicitudPersonaRolId = solicitudPersonaRolId;
+        this.solicitantePersonaRolId = solicitudPersonaRolId;
         this.motivo = motivo;
+        this.nuevoResultado = nuevoResultado;
         this.estado = EstadoSolicitud.PENDIENTE;
         this.fechaSolicitud = LocalDateTime.now();
     }

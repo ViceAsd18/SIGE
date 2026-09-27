@@ -13,7 +13,6 @@ import cl.sige.plataforma.ms_evaluaciones_notas.service.SolicitudExcepcionCalifi
 import cl.sige.plataforma.ms_evaluaciones_notas.web.dto.solicitud.AprobarSolicitudRequest;
 import cl.sige.plataforma.ms_evaluaciones_notas.web.dto.solicitud.CrearSolicitudRequest;
 import cl.sige.plataforma.ms_evaluaciones_notas.web.dto.solicitud.SolicitudResponse;
-import jakarta.ws.rs.Path;
 import lombok.RequiredArgsConstructor;
 import cl.sige.plataforma.ms_evaluaciones_notas.domain.SolicitudExcepcionCalificacion;
 
@@ -27,14 +26,13 @@ public class SolicitudExcepcionCalificacionController {
     @PostMapping
     public ResponseEntity<SolicitudResponse> crear(@RequestBody CrearSolicitudRequest request) {
         SolicitudExcepcionCalificacion solicitud =  solicitudService.crear(
-            request.calificacionId(), request.solicitantePersonaRolId(), request.motivo());
+            request.calificacionId(), request.solicitantePersonaRolId(), request.motivo(), request.nuevoResultado());
         return ResponseEntity.status(HttpStatus.CREATED).body(aResponse(solicitud));
     }
 
     @PatchMapping("/{id}/aprobar")
     public ResponseEntity<SolicitudResponse> aprobar(@PathVariable Long id, @RequestBody AprobarSolicitudRequest request) {
-        SolicitudExcepcionCalificacion solicitud = solicitudService.aprobar(
-            id, request.aprobadorPersonaRolId(), request.nuevoResultado());
+        SolicitudExcepcionCalificacion solicitud = solicitudService.aprobar(id, request.aprobadorPersonaRolId());
         return ResponseEntity.ok(aResponse(solicitud));
     }
 
@@ -44,11 +42,9 @@ public class SolicitudExcepcionCalificacionController {
         return ResponseEntity.ok(aResponse(solicitud));
     }
 
-
-
     private SolicitudResponse aResponse(SolicitudExcepcionCalificacion s) {
-        return new SolicitudResponse(s.getId(), s.getCalificacion().getId(), s.getSolicitudPersonaRolId(),
-                s.getAprobadorPersonaRolId(), s.getMotivo(), s.getEstado().name());
+        return new SolicitudResponse(s.getId(), s.getCalificacion().getId(), s.getSolicitantePersonaRolId(),
+                s.getAprobadorPersonaRolId(), s.getMotivo(), s.getEstado().name(), s.getNuevoResultado());
     }
 
 }

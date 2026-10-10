@@ -14,5 +14,6 @@ public record AnotacionResponse(
     GravedadAnotacion gravedad,
     String descripcion,
     LocalDateTime fechaCreacion,
-    EstadoAnotacion estado
+    EstadoAnotacion estado,
+    String motivoAnulacion
 ) {}

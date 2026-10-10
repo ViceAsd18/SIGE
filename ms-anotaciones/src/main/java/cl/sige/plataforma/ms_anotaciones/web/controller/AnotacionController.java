@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import cl.sige.plataforma.ms_anotaciones.domain.Anotacion;
 import cl.sige.plataforma.ms_anotaciones.service.AnotacionService;
 import cl.sige.plataforma.ms_anotaciones.web.dto.AnotacionResponse;
+import cl.sige.plataforma.ms_anotaciones.web.dto.AnularAnotacionRequest;
 import cl.sige.plataforma.ms_anotaciones.web.dto.CrearAnotacionRequest;
 import cl.sige.plataforma.ms_anotaciones.web.dto.ModificarAnotacionRequest;
 import lombok.RequiredArgsConstructor;
@@ -46,8 +47,8 @@ public class AnotacionController {
     }
 
     @PatchMapping("/{id}/anular")
-    public ResponseEntity<Void> anular(@PathVariable Long id) {
-        anotacionService.anular(id);
+    public ResponseEntity<Void> anular(@PathVariable Long id, @RequestBody AnularAnotacionRequest request) {
+        anotacionService.anular(id, request.anuladorPersonaRolId(), request.motivo());
         return ResponseEntity.noContent().build();
     }
 
@@ -64,7 +65,7 @@ public class AnotacionController {
 
     private AnotacionResponse aResponse(Anotacion a) {
         return new AnotacionResponse(a.getId(), a.getEstudianteId(), a.getAutorPersonaRolId(),
-                a.getCategoria(), a.getGravedad(), a.getDescripcion(), a.getFechaCreacion(), a.getEstado());
+                a.getCategoria(), a.getGravedad(), a.getDescripcion(), a.getFechaCreacion(), a.getEstado(), a.getMotivoAnulacion());
     }
 
 }

@@ -12,6 +12,7 @@ import cl.sige.plataforma.ms_anotaciones.client.IdentidadAccesoClient;
 import cl.sige.plataforma.ms_anotaciones.client.dto.PersonaRolClientResponse;
 import cl.sige.plataforma.ms_anotaciones.domain.Anotacion;
 import cl.sige.plataforma.ms_anotaciones.domain.enums.CategoriaAnotacion;
+import cl.sige.plataforma.ms_anotaciones.domain.enums.EstadoAnotacion;
 import cl.sige.plataforma.ms_anotaciones.domain.enums.GravedadAnotacion;
 import cl.sige.plataforma.ms_anotaciones.event.AnotacionCreadaEvent;
 import cl.sige.plataforma.ms_anotaciones.event.AuditoriaEvent;
@@ -40,7 +41,7 @@ public class AnotacionService {
     public Anotacion crear(Long estudianteId, Long autorPersonaRolId, CategoriaAnotacion categoria, GravedadAnotacion gravedad, String descripcion) {
         
         validarEstudiante(estudianteId);
-        validarAutor(autorPersonaRolId);
+        validarActor(autorPersonaRolId, "crear");
         validarGravedad(categoria, gravedad);
         
         Anotacion anotacion = anotacionRepository.save(
@@ -66,10 +67,25 @@ public class AnotacionService {
     }
 
     @Transactional
-    public void anular(Long id) {
+    public void anular(Long id, Long anuladorPersonaRolId, String motivo) {
+        if (motivo == null || motivo.isBlank()) {
+            throw new RecursoInvalidoException("Para anular una anotacion se debe indicar el motivo");
+        }
+
         Anotacion anotacion = obtenerPorId(id);
-        anotacion.anular();
-        log.info("Anotacion anulada: id={}", id);
+        if(anotacion.getEstado() == EstadoAnotacion.ANULADA) {
+            throw new RecursoInvalidoException("La Anotacion con id=" + id + " ya esta ANULADA");
+        }
+        validarActor(anuladorPersonaRolId,"anular");
+
+        anotacion.anular(anuladorPersonaRolId, motivo);
+
+        eventPublisher.publicarAuditoria(new AuditoriaEvent(
+            anuladorPersonaRolId, anuladorPersonaRolId, "ANULAR", "Anotacion", id,
+            "VIGENTE", "ANULADA", motivo, Instant.now()));
+
+        log.info("Anotacion anulada: id={}, por personaRolId={}", id, anuladorPersonaRolId);
+
     }
 
     @Transactional(readOnly = true)
@@ -82,13 +98,6 @@ public class AnotacionService {
         return anotacionRepository.findByEstudianteId(estudianteId);
     }
 
-
-
-
-
-
-
-
     private void validarEstudiante(Long estudianteId) {
         try {
             estudiantesClient.obtenerEstudiante(estudianteId);
@@ -97,21 +106,22 @@ public class AnotacionService {
         }
     }
 
-    private void validarAutor(Long autorPersonaRolId) {
+    private void validarActor(Long personaRolId, String accion) {
         PersonaRolClientResponse personaRol;
         try {
-            personaRol = identidadAccesoClient.obtenerPersonaRol(autorPersonaRolId);
+            personaRol = identidadAccesoClient.obtenerPersonaRol(personaRolId);
         } catch (FeignException.NotFound e) {
-            throw new RecursoInvalidoException("No existe PersonaRol con id=" + autorPersonaRolId);
+            throw new RecursoInvalidoException("No existe PersonaRol con id=" + personaRolId);
         }
-        if(!"ACTIVO".equals(personaRol.estado())) {
-            throw new RecursoInvalidoException("El personaRol con id=" + autorPersonaRolId + " no esta ACTIVO"); 
+        if (!"ACTIVO".equals(personaRol.estado())) {
+            throw new RecursoInvalidoException("El personaRol con id=" + personaRolId + " no esta ACTIVO");
         }
 
-        if(!ROLES_AUTORIZADOS.contains(personaRol.nombreRol())) {
-            throw new RecursoInvalidoException("El rol " + personaRol.nombreRol() + " no esta autorizado para crear anotaciones (solo DOCENTE o INSPECTOR)");
+        if (!ROLES_AUTORIZADOS.contains(personaRol.nombreRol())) {
+            throw new RecursoInvalidoException("El rol " + personaRol.nombreRol() + " no esta autorizado para " + accion + " anotaciones (solo DOCENTE o INSPECTOR)");
         }
     }
+
 
     private void validarGravedad(CategoriaAnotacion categoria, GravedadAnotacion gravedad) {
         if (categoria == CategoriaAnotacion.NEGATIVA && gravedad == null) {

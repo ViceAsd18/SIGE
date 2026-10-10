@@ -41,7 +41,7 @@ public class Anotacion {
     private CategoriaAnotacion categoria;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gravedad", nullable = false, length = 20)
+    @Column(name = "gravedad", length = 20)
     private GravedadAnotacion gravedad;
 
     @Column(name = "descripcion", nullable = false, length = 1000)
@@ -53,6 +53,15 @@ public class Anotacion {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false, length = 20)
     private EstadoAnotacion estado;
+
+    @Column(name = "motivo_anulacion", length = 500)
+    private String motivoAnulacion;
+
+    @Column(name = "anulada_por_persona_rol_id")
+    private Long anuladaPorPersonaRolId;
+
+    @Column(name = "fecha_anulacion")
+    private LocalDateTime fechaAnulacion;
 
     public Anotacion(Long estudianteId, Long autorPersonaRolId, CategoriaAnotacion categoria, GravedadAnotacion gravedad, String descripcion) {
         this.estudianteId = estudianteId;
@@ -68,8 +77,11 @@ public class Anotacion {
         this.descripcion = nuevaDescripcion;
     }
 
-    public void anular() {
+    public void anular(Long anuladaPorPersonaRolId, String motivo) {
         this.estado = EstadoAnotacion.ANULADA;
+        this.anuladaPorPersonaRolId = anuladaPorPersonaRolId;
+        this.motivoAnulacion = motivo;
+        this.fechaAnulacion = LocalDateTime.now();
     }
 
 }

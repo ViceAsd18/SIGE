@@ -1,5 +1,6 @@
 package cl.sige.plataforma.ms_mensajeria.service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -81,24 +82,31 @@ public class SolicitudAccesoConversacionService {
     }
 
     @Transactional
-    public SolicitudAccesoConversacion rechazar(Long solicitudId, Long aprobadorPersonaRolId) {
+    public SolicitudAccesoConversacion rechazar(Long solicitudId, Long aprobadorPersonaRolId, String motivoRechazo) { 
+        if (motivoRechazo == null || motivoRechazo.isBlank()) {
+            throw new RecursoInvalidoException("Para rechazar una solicitud se debe indicar el motivo");
+        }
+
         SolicitudAccesoConversacion solicitud = solicitudRepository.findById(solicitudId)
-            .orElseThrow(() -> new RecursoNoEncontradoException("SolicitudAccesoConversacion", aprobadorPersonaRolId));
+                .orElseThrow(() -> new RecursoNoEncontradoException("SolicitudAccesoConversacion", solicitudId));
+
+        if (solicitud.getEstado() != EstadoSolicitud.PENDIENTE) {
+            throw new RecursoInvalidoException("La solicitud id=" + solicitudId + " no esta PENDIENTE (estado actual: " + solicitud.getEstado() + ")");
+        }
 
         validarRol(aprobadorPersonaRolId, Set.of("DIRECTIVO"));
-        solicitud.rechazar(aprobadorPersonaRolId);
-        log.info("SolicitudAccesoConversacion rechazada: id={}", solicitudId);
-        
+        solicitud.rechazar(aprobadorPersonaRolId, motivoRechazo);
+        log.info("SolicitudAccesoConversacion rechazada id={}", solicitudId);
+
         eventPublisher.publicarSolicitudAcceso(new SolicitudAccesoEvent(
             solicitudId, solicitud.getConversacion().getId(), solicitud.getSolicitantePersonaRolId(),
             aprobadorPersonaRolId, "RECHAZADA"));
 
         eventPublisher.publicarAuditoria(new AuditoriaEvent(
             aprobadorPersonaRolId, aprobadorPersonaRolId, "RECHAZAR", "SolicitudAccesoConversacion", solicitudId,
-            "PENDIENTE", "RECHAZADA", null, java.time.Instant.now()));
-    
-        return solicitud;
+            "PENDIENTE", "RECHAZADA", motivoRechazo, Instant.now()));
 
+        return solicitud;
     }
 
 

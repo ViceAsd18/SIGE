@@ -16,6 +16,7 @@ import cl.sige.plataforma.ms_mensajeria.domain.SolicitudAccesoConversacion;
 import cl.sige.plataforma.ms_mensajeria.service.SolicitudAccesoConversacionService;
 import cl.sige.plataforma.ms_mensajeria.web.dto.mensajes.MensajeResponse;
 import cl.sige.plataforma.ms_mensajeria.web.dto.solicitud.CrearSolicitudAccesoRequest;
+import cl.sige.plataforma.ms_mensajeria.web.dto.solicitud.RechazarSolicitudAccesoRequest;
 import cl.sige.plataforma.ms_mensajeria.web.dto.solicitud.ResolverSolicitudAccesoRequest;
 import cl.sige.plataforma.ms_mensajeria.web.dto.solicitud.SolicitudAccesoResponse;
 import lombok.RequiredArgsConstructor;
@@ -41,8 +42,8 @@ public class SolicitudAccesoConversacionController {
     }
 
     @PatchMapping("/{id}/rechazar")
-    public ResponseEntity<SolicitudAccesoResponse> rechazar(@PathVariable Long id,@RequestBody ResolverSolicitudAccesoRequest request) {
-        SolicitudAccesoConversacion s = solicitudService.rechazar(id, request.aprobadorPersonaRolId());
+    public ResponseEntity<SolicitudAccesoResponse> rechazar(@PathVariable Long id, @RequestBody RechazarSolicitudAccesoRequest request) {
+        SolicitudAccesoConversacion s = solicitudService.rechazar(id, request.aprobadorPersonaRolId(), request.motivo());
         return ResponseEntity.ok(aResponse(s));
     }
 
@@ -57,7 +58,7 @@ public class SolicitudAccesoConversacionController {
 
     private SolicitudAccesoResponse aResponse(SolicitudAccesoConversacion s) {
         return new SolicitudAccesoResponse(s.getId(), s.getConversacion().getId(), s.getSolicitantePersonaRolId(),
-                s.getAprobadorPersonaRolId(), s.getMotivo(), s.getEstado().name());
+                s.getAprobadorPersonaRolId(), s.getMotivo(), s.getEstado().name(), s.getMotivoRechazo());
     }
 
 

@@ -6,5 +6,6 @@ public record SolicitudAccesoResponse(
     Long solicitantePersonaRolId,
     Long aprobadorPersonaRolId,
     String motivo,
-    String estado
+    String estado,
+    String motivoRechazo
 ) {}

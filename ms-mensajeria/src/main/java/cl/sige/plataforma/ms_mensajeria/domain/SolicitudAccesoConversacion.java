@@ -53,6 +53,9 @@ public class SolicitudAccesoConversacion {
     @Column(name = "fecha_resolucion")
     private LocalDateTime fechaResolucion;
 
+    @Column(name = "motivo_rechazo", length = 500)
+    private String motivoRechazo;
+
     public SolicitudAccesoConversacion(Conversacion conversacion, Long solicitantePersonaRolId, String motivo) {
         this.conversacion = conversacion;
         this.solicitantePersonaRolId = solicitantePersonaRolId;
@@ -67,9 +70,10 @@ public class SolicitudAccesoConversacion {
         this.fechaResolucion = LocalDateTime.now();
     }
 
-    public void rechazar(Long aprobadorPersonaRolId) {
+    public void rechazar(Long aprobadorPersonaRolId, String motivoRechazo) {
         this.estado = EstadoSolicitud.RECHAZADA;
         this.aprobadorPersonaRolId = aprobadorPersonaRolId;
+        this.motivoRechazo = motivoRechazo;
         this.fechaResolucion = LocalDateTime.now();
     }
 

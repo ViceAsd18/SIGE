@@ -61,24 +61,27 @@ public class SolicitudAccesoConversacionService {
     @Transactional
     public SolicitudAccesoConversacion aprobar(Long solicitudId, Long aprobadorPersonaRolId) {
         SolicitudAccesoConversacion solicitud = solicitudRepository.findById(solicitudId)
-            .orElseThrow(() -> new RecursoNoEncontradoException("SolicitudAccesoConversacion", aprobadorPersonaRolId));
+            .orElseThrow(() -> new RecursoNoEncontradoException("SolicitudAccesoConversacion", solicitudId));
+
+        if (solicitud.getEstado() != EstadoSolicitud.PENDIENTE) {
+            throw new RecursoInvalidoException("La solicitud id=" + solicitudId + " no esta PENDIENTE (estado actual: " + solicitud.getEstado() + ")");
+        }
 
         validarRol(aprobadorPersonaRolId, Set.of("DIRECTIVO"));
         
         solicitud.aprobar(aprobadorPersonaRolId);
         solicitud.marcarEjecutada();
         log.info("SolicitudAccesoConversacion aprobada y ejecutada: id={}", solicitudId);
-        
+
         eventPublisher.publicarSolicitudAcceso(new SolicitudAccesoEvent(
             solicitudId, solicitud.getConversacion().getId(), solicitud.getSolicitantePersonaRolId(),
             aprobadorPersonaRolId, "APROBADA"));
 
         eventPublisher.publicarAuditoria(new AuditoriaEvent(
             aprobadorPersonaRolId, aprobadorPersonaRolId, "APROBAR", "SolicitudAccesoConversacion", solicitudId,
-            "PENDIENTE", "APROBADA", null, java.time.Instant.now()));
+            "PENDIENTE", "APROBADA", null, Instant.now()));
 
         return solicitud;
-
     }
 
     @Transactional

@@ -86,6 +86,11 @@ public class ConversacionService {
     }
 
 
+    @Transactional(readOnly = true)
+    public List<Conversacion> obtenerPorPersona(Long personaId) {
+        return conversacionRepository.findByParticipante(personaId);
+    }
+
 
     private void validarRolActivo(Long personaRolId, String rolEsperado) {
         PersonaRolClientResponse personaRol;

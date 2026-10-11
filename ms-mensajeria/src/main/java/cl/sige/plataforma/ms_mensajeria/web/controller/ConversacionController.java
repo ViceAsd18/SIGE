@@ -1,5 +1,7 @@
 package cl.sige.plataforma.ms_mensajeria.web.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,6 +40,14 @@ public class ConversacionController {
     public ResponseEntity<ConversacionResponse> obtener(@PathVariable Long id) {
         Conversacion conversacion = conversacionService.obtenerPorId(id);
         return ResponseEntity.ok(new ConversacionResponse(conversacion.getId(),conversacion.getFechaInicio()));
+    }
+
+    @GetMapping("/persona/{personaId}")
+    public ResponseEntity<List<ConversacionResponse>> obtenerPorPersona(@PathVariable Long personaId) {
+        List<ConversacionResponse> response = conversacionService.obtenerPorPersona(personaId).stream()
+            .map(c -> new ConversacionResponse(c.getId(), c.getFechaInicio()))
+            .toList();
+        return ResponseEntity.ok(response);
     }
 
 }

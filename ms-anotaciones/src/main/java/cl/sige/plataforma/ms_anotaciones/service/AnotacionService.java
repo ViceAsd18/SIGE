@@ -24,6 +24,12 @@ import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -36,6 +42,8 @@ public class AnotacionService {
     private final IdentidadAccesoClient identidadAccesoClient;
 
     private final EventPublisher eventPublisher;
+
+    private static final int MAX_TAMANO_PAGINA = 100;
 
     @Transactional
     public Anotacion crear(Long estudianteId, Long autorPersonaRolId, CategoriaAnotacion categoria, GravedadAnotacion gravedad, String descripcion) {
@@ -97,6 +105,54 @@ public class AnotacionService {
     public List<Anotacion> obtenerPorEstudiante(Long estudianteId) {
         return anotacionRepository.findByEstudianteId(estudianteId);
     }
+
+    @Transactional(readOnly = true)
+    public Page<Anotacion> buscar(EstadoAnotacion estado, CategoriaAnotacion categoria, GravedadAnotacion gravedad, 
+        Long estudianteId, LocalDate desde, LocalDate hasta, int page, int size) {
+
+        if (page < 0) {
+            throw new RecursoInvalidoException("El parametro page debe ser 0 o mayor");
+        }
+
+        if (size < 1 || size > MAX_TAMANO_PAGINA) {
+            throw new RecursoInvalidoException("El parametro size debe estar entre 1 y " + MAX_TAMANO_PAGINA);
+        }
+
+        if (desde != null && hasta != null && hasta.isBefore(desde)) {
+            throw new RecursoInvalidoException("La fecha 'hasta' no puede ser anterior a 'desde'");
+        }
+
+        Specification<Anotacion> spec = (root, query, cb) -> cb.conjunction();
+
+        if (estado != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("estado"), estado));
+        }
+
+        if (categoria != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("categoria"), categoria));
+        }
+
+        if (gravedad != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("gravedad"), gravedad));
+        }
+
+        if (estudianteId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("estudianteId"), estudianteId));
+        }
+
+        if (desde != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("fechaCreacion"), desde.atStartOfDay()));
+        }
+
+        if (desde != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThan(root.get("fechaCreacion"), hasta.plusDays(1).atStartOfDay()));
+        }
+
+        return anotacionRepository.findAll(spec, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fechaCreacion")));
+
+    }
+
+
 
     private void validarEstudiante(Long estudianteId) {
         try {

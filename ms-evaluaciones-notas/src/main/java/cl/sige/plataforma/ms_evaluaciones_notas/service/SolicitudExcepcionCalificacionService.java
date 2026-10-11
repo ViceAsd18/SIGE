@@ -44,6 +44,17 @@ public class SolicitudExcepcionCalificacionService {
     
         validarRol(solicitantePersonaRolId, "DOCENTE");
 
+        if (nuevoResultado == null
+            || nuevoResultado.compareTo(new BigDecimal("1.0")) < 0
+            || nuevoResultado.compareTo(new BigDecimal("7.0")) > 0 ) {
+                throw new RecursoInvalidoException("El nuevoResultado debe estar entre 1.0 y 7.0");
+        }
+
+        if (solicitudRepository.existsByCalificacionIdAndEstado(calificacionId, EstadoSolicitud.PENDIENTE)) {
+            throw new RecursoInvalidoException("Ya existe una solicitud PENDIENTE para la calificacion id=" + calificacionId);
+        }
+
+
         SolicitudExcepcionCalificacion solicitud = solicitudRepository.save(
             new SolicitudExcepcionCalificacion(calificacion, solicitantePersonaRolId, motivo, nuevoResultado));
         log.info("SolicitudExceptionCalificacion creada: id={} calificacionId={} nuevoResultado={}",

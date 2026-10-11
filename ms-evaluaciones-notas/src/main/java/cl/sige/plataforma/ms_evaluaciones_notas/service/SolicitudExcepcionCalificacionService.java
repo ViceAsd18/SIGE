@@ -9,6 +9,7 @@ import cl.sige.plataforma.ms_evaluaciones_notas.client.IdentidadAccesoClient;
 import cl.sige.plataforma.ms_evaluaciones_notas.client.dto.PersonaRolClientResponse;
 import cl.sige.plataforma.ms_evaluaciones_notas.domain.Calificacion;
 import cl.sige.plataforma.ms_evaluaciones_notas.domain.SolicitudExcepcionCalificacion;
+import cl.sige.plataforma.ms_evaluaciones_notas.domain.enums.EstadoSolicitud;
 import cl.sige.plataforma.ms_evaluaciones_notas.event.AuditoriaEvent;
 import cl.sige.plataforma.ms_evaluaciones_notas.event.EventPublisher;
 import cl.sige.plataforma.ms_evaluaciones_notas.event.SolicitudExcepcionEvent;
@@ -63,8 +64,9 @@ public class SolicitudExcepcionCalificacionService {
     @Transactional
     public SolicitudExcepcionCalificacion aprobar(Long solicitudId, Long aprobadorPersonaRolId) {
         SolicitudExcepcionCalificacion solicitud = solicitudRepository.findById(solicitudId)
-            .orElseThrow(() -> new RecursoNoEncontradoException("SolicitudExceptionCalificacion", solicitudId));
+            .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD_TIPO, solicitudId));
 
+        validarPendiente(solicitud);
         validarRol(aprobadorPersonaRolId, "DIRECTIVO");
 
         solicitud.aprobar(aprobadorPersonaRolId);
@@ -88,8 +90,9 @@ public class SolicitudExcepcionCalificacionService {
     @Transactional
     public SolicitudExcepcionCalificacion rechazar(Long solicitudId, Long aprobadorPersonaRolId) {
         SolicitudExcepcionCalificacion solicitud = solicitudRepository.findById(solicitudId)
-            .orElseThrow(() -> new RecursoNoEncontradoException("SolicitudExceptionCalificacion", solicitudId));
+            .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD_TIPO, solicitudId));
 
+        validarPendiente(solicitud);
         validarRol(aprobadorPersonaRolId, "DIRECTIVO");
 
         solicitud.rechazar(aprobadorPersonaRolId);
@@ -122,6 +125,12 @@ public class SolicitudExcepcionCalificacionService {
             throw new RecursoInvalidoException("El PersonaRol id=" + personaRolId + " no es un " + rolEsperado + " activo valido");
         }
 
+    }
+
+    private void validarPendiente(SolicitudExcepcionCalificacion solicitud) {
+        if (solicitud.getEstado() != EstadoSolicitud.PENDIENTE) {
+            throw new RecursoInvalidoException("La solicitud id=" + solicitud.getId() + " no esta PENDIENTE (estado actual: " + solicitud.getEstado() + ")");
+        }
     }
 
 

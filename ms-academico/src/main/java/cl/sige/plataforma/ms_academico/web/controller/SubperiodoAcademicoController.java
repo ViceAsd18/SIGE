@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import cl.sige.plataforma.ms_academico.domain.SubperiodoAcademico;
 import cl.sige.plataforma.ms_academico.service.SubperiodoAcademicoService;
+import cl.sige.plataforma.ms_academico.web.dto.subperiodo_academico.CerrarSubperiodoRequest;
 import cl.sige.plataforma.ms_academico.web.dto.subperiodo_academico.CrearSubperiodoRequest;
 import cl.sige.plataforma.ms_academico.web.dto.subperiodo_academico.SubperiodoAcademicoResponse;
 import lombok.RequiredArgsConstructor;
@@ -41,17 +42,11 @@ public class SubperiodoAcademicoController {
     }
 
     @PatchMapping("/{id}/cerrar")
-    public ResponseEntity<Void> cerrar(@PathVariable Long periodoId, @PathVariable Long id) {
-        subperiodoAcademicoService.cerrar(id);
+    public ResponseEntity<Void> cerrar(@PathVariable Long periodoId, @PathVariable Long id,
+                                       @RequestBody CerrarSubperiodoRequest request) {
+        subperiodoAcademicoService.cerrar(id, request.cerradorPersonaRolId());
         return ResponseEntity.noContent().build();
     }
-
-    @PatchMapping("/{id}/reabrir")
-    public ResponseEntity<Void> reabrir(@PathVariable Long periodoId, @PathVariable Long id) {
-        subperiodoAcademicoService.reabrir(id);
-        return ResponseEntity.noContent().build();
-    }
-
 
     private SubperiodoAcademicoResponse aResponse(SubperiodoAcademico s) {
         return new SubperiodoAcademicoResponse(

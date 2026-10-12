@@ -36,19 +36,6 @@ public class PeriodoAcademicoController {
         return ResponseEntity.ok(aResponse(periodoAcademicoService.obtenerPorId(id)));
     }
 
-    @PatchMapping("/{id}/cerrar")
-    public ResponseEntity<Void> cerrar(@PathVariable Long id) {
-        periodoAcademicoService.cerrar(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping("/{id}/reabrir")
-    public ResponseEntity<Void> reabrir(@PathVariable Long id) {
-        periodoAcademicoService.reabrir(id);
-        return ResponseEntity.noContent().build();
-    }
-
-
     private PeriodoAcademicoResponse aResponse(PeriodoAcademico periodo) {
         return new PeriodoAcademicoResponse(
                 periodo.getId(), periodo.getNombreAnio(), periodo.getFechaInicio(),

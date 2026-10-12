@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import cl.sige.plataforma.ms_academico.domain.PeriodoAcademico;
+import cl.sige.plataforma.ms_academico.domain.enums.EstadoPeriodo;
 import cl.sige.plataforma.ms_academico.event.AuditoriaEvent;
 import cl.sige.plataforma.ms_academico.event.EventPublisher;
 import cl.sige.plataforma.ms_academico.event.PeriodoAcademicoCerradoEvent;
@@ -42,27 +43,25 @@ public class PeriodoAcademicoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("PeriodoAcademico", id));   
     }
 
-    @Transactional(readOnly = true)
-    public void cerrar(Long id){
-        PeriodoAcademico periodo = obtenerPorId(id);
+    @Transactional
+    public void cerrarAutomaticamente(PeriodoAcademico periodo, Long personaId, Long personaRolId) {
+        if (periodo.getEstado() == EstadoPeriodo.CERRADO) {
+            return;
+        }
+
         periodo.cerrar();
-        log.info("PeriodoAcademico cerrado: id={}",id);
+        log.info("PeriodoAcademico cerrado Automaticamente: id={}", periodo.getId());
 
         eventPublisher.publicarPeriodoAcademicoCerrado(new PeriodoAcademicoCerradoEvent(
             periodo.getId(), periodo.getNombreAnio()));
 
+        
         eventPublisher.publicarAuditoria(new AuditoriaEvent(
-            null, null, "CERRAR", "PeriodoAcademico", id,
-            "ABIERTO", "CERRADO", null, java.time.Instant.now()));
-    }
+            personaId, personaRolId, "CERRAR", "PeriodoAcademico", periodo.getId(),
+            "ABIERTO", "CERRADO", "Cierre automatico: todos los subperiodos estan cerrados",
+            java.time.Instant.now()));
 
-    @Transactional(readOnly = true)
-    public void reabrir(Long id){
-        PeriodoAcademico periodo = obtenerPorId(id);
-        periodo.reabrir();
-        log.info("PeriodoAcademico reabierto: id={}",id);
-    }
-
+    } 
 
 
 }

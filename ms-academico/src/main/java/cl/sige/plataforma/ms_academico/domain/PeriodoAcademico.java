@@ -50,9 +50,4 @@ public class PeriodoAcademico {
         this.estado = EstadoPeriodo.CERRADO;
     }
 
-    public void reabrir() {
-        this.estado = EstadoPeriodo.ABIERTO;
-    }
-
-
 }

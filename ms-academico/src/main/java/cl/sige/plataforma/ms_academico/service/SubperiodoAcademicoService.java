@@ -17,6 +17,12 @@ import cl.sige.plataforma.ms_academico.event.SubperiodoAcademicoCerradoEvent;
 import cl.sige.plataforma.ms_academico.exception.RecursoNoEncontradoException;
 import cl.sige.plataforma.ms_academico.domain.PeriodoAcademico;
 
+import cl.sige.plataforma.ms_academico.client.IdentidadAccesoClient;
+import cl.sige.plataforma.ms_academico.client.dto.PersonaRolClientResponse;
+import cl.sige.plataforma.ms_academico.domain.enums.EstadoPeriodo;
+import cl.sige.plataforma.ms_academico.exception.RecursoInvalidoException;
+import feign.FeignException;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -24,6 +30,7 @@ public class SubperiodoAcademicoService {
     
     private final SubperiodoAcademicoRepository subperiodoAcademicoRepository;
     private final PeriodoAcademicoService periodoAcademicoService;
+    private final IdentidadAccesoClient identidadAccesoClient;
 
     private final EventPublisher eventPublisher;
 
@@ -44,26 +51,35 @@ public class SubperiodoAcademicoService {
     }
 
     @Transactional
-    public void cerrar(Long id) {
+    public void cerrar(Long id, Long cerradorPersonaRolId) {
+        PersonaRolClientResponse directivo = validarDirectivo(cerradorPersonaRolId);
+
         SubperiodoAcademico subperiodo = subperiodoAcademicoRepository.findById(id)
             .orElseThrow(() -> new RecursoNoEncontradoException("SubperiodoAcademico", id));
+
+        if (subperiodo.getEstado() == EstadoPeriodo.CERRADO) {
+            throw new RecursoInvalidoException(
+                "El subperiodo id=" + id + " ya esta CERRADO. El cierre es definitivo.");
+        }
+
         subperiodo.cerrar();
+        PeriodoAcademico periodo = subperiodo.getPeriodoAcademico();
+        log.info("SubperiodoAcademico cerrado: id={}, periodoId={}", id, periodo.getId());
 
         eventPublisher.publicarSubperiodoAcademicoCerrado(new SubperiodoAcademicoCerradoEvent(
-            subperiodo.getId(), subperiodo.getPeriodoAcademico().getId(), subperiodo.getNombre()));
+            subperiodo.getId(), periodo.getId(), subperiodo.getNombre()));
 
         eventPublisher.publicarAuditoria(new AuditoriaEvent(
-            null, null, "CERRAR", "SubperiodoAcademico", id,
+            directivo.personaId(), cerradorPersonaRolId, "CERRAR", "SubperiodoAcademico", id,
             "ABIERTO", "CERRADO", null, java.time.Instant.now()));
-        
+
+        boolean todosCerrados = subperiodoAcademicoRepository.findByPeriodoAcademicoId(periodo.getId())
+            .stream().allMatch(s -> s.getEstado() == EstadoPeriodo.CERRADO);
+        if (todosCerrados) {
+            periodoAcademicoService.cerrarAutomaticamente(periodo, directivo.personaId(), cerradorPersonaRolId);
+        }
     }
 
-    @Transactional
-    public void reabrir(Long id) {
-        SubperiodoAcademico subperiodo = subperiodoAcademicoRepository.findById(id)
-            .orElseThrow(() -> new RecursoNoEncontradoException("SubperiodoAcademico", id));
-        subperiodo.reabrir();
-    }
 
     @Transactional(readOnly = true)
     public SubperiodoAcademico obtenerPorId(Long id) {
@@ -71,5 +87,23 @@ public class SubperiodoAcademicoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("SubperiodoAcademico", id));
     }
 
+    private PersonaRolClientResponse validarDirectivo(Long personaRolId) {
+        if (personaRolId == null) {
+            throw new RecursoInvalidoException("cerradorPersonaRolId es obligatorio");
+        }
+        PersonaRolClientResponse pr;
+        try {
+            pr = identidadAccesoClient.obtenerPersonaRol(personaRolId);
+        } catch (FeignException.NotFound e) {
+            throw new RecursoInvalidoException("No existe un PersonaRol con id=" + personaRolId + " en ms-identidad-acceso");
+        }
+        if (!"ACTIVO".equals(pr.estado())) {
+            throw new RecursoInvalidoException("El PersonaRol id=" + personaRolId + " no esta ACTIVO");
+        }
+        if (!"DIRECTIVO".equals(pr.nombreRol())) {
+            throw new RecursoInvalidoException("Solo un DIRECTIVO puede cerrar un subperiodo (rol actual: " + pr.nombreRol() + ")");
+        }
+        return pr;
+    }
 
 }

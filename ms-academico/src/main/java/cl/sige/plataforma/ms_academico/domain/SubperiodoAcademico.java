@@ -58,8 +58,4 @@ public class SubperiodoAcademico {
         this.estado = EstadoPeriodo.CERRADO;
     }
 
-    public void reabrir() {
-        this.estado = EstadoPeriodo.ABIERTO;
-    }
-
 }

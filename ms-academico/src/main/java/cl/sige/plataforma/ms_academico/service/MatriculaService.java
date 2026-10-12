@@ -92,8 +92,19 @@ public class MatriculaService {
 
     @Transactional
     public void retirar(Long matriculaId, String motivo) {
+        if (motivo == null || motivo.isBlank()) {
+                throw new RecursoInvalidoException("El motivo del retiro es obligatorio");
+        }
+
         Matricula matricula = matriculaRepository.findById(matriculaId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Matricula", matriculaId));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Matricual", matriculaId));
+
+        if (matricula.getEstado() != EstadoMatricula.ACTIVA) {
+                throw new RecursoInvalidoException(
+                    "La matricula id=" + matriculaId + " no esta ACTIVA (estado actual: "
+                            + matricula.getEstado() + "). Para reincorporar al estudiante cree una nueva matricula.");
+        } 
+
         matricula.retirar(motivo);
         log.info("Matricula retirada: id={}", matriculaId);
 
@@ -102,8 +113,7 @@ public class MatriculaService {
 
         eventPublisher.publicarAuditoria(new AuditoriaEvent(
                 null, null, "RETIRAR", "Matricula", matriculaId,
-                "ACTIVA", "RETIRADA", motivo, java.time.Instant.now()));
-
+                "ACTIVA", "RETIRADA", motivo, Instant.now()));
     }
 
     private void validarEstudiante(Long estudianteId) {

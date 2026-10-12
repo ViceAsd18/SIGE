@@ -53,7 +53,7 @@ public class PeriodoAcademicoService {
         log.info("PeriodoAcademico cerrado Automaticamente: id={}", periodo.getId());
 
         eventPublisher.publicarPeriodoAcademicoCerrado(new PeriodoAcademicoCerradoEvent(
-            periodo.getId(), periodo.getNombreAnio()));
+            periodo.getId(), periodo.getNombreAnio(), periodo.getFechaTermino()));
 
         
         eventPublisher.publicarAuditoria(new AuditoriaEvent(

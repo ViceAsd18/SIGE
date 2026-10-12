@@ -67,7 +67,7 @@ public class SubperiodoAcademicoService {
         log.info("SubperiodoAcademico cerrado: id={}, periodoId={}", id, periodo.getId());
 
         eventPublisher.publicarSubperiodoAcademicoCerrado(new SubperiodoAcademicoCerradoEvent(
-            subperiodo.getId(), periodo.getId(), subperiodo.getNombre()));
+            subperiodo.getId(), periodo.getId(), subperiodo.getNombre(), subperiodo.getFechaTermino()));
 
         eventPublisher.publicarAuditoria(new AuditoriaEvent(
             directivo.personaId(), cerradorPersonaRolId, "CERRAR", "SubperiodoAcademico", id,
